@@ -294,6 +294,8 @@ if ($force) {
         $docIds = $pdo->query("SELECT id FROM stock_documents WHERE notes LIKE 'Import gestionmystock achat %'")->fetchAll(PDO::FETCH_COLUMN);
         if ($docIds) {
             $in = implode(',', array_map('intval', $docIds));
+            // Les mouvements référencent les lignes/documents : on les supprime d'abord.
+            $pdo->exec("DELETE FROM stock_movements WHERE document_id IN ({$in})");
             $pdo->exec("DELETE FROM stock_document_lines WHERE document_id IN ({$in})");
             $pdo->exec("DELETE FROM stock_documents WHERE id IN ({$in})");
         }
