@@ -6,6 +6,8 @@
 /** @var array<int, \App\Domain\Entities\Brand> $brands */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
 /** @var array{products: int, quantity: float, value: float, saleValue: float, margin: float, alerts: int} $summary */
+/** @var int $page */
+/** @var int $pages */
 /** @var bool $canManage */
 $query = http_build_query(array_filter([
     'q'           => $filters['q'],
@@ -27,6 +29,8 @@ $exportLinks = [
     ['label' => 'État du stock', 'format' => 'pdf', 'description' => 'Synthèse imprimable pour contrôle', 'url' => url('/consultation/export?' . $query . '&format=pdf')],
     ['label' => 'État du stock', 'format' => 'csv', 'description' => 'Export brut pour retraitement', 'url' => url('/consultation/export?' . $query . '&format=csv')],
 ];
+$pageUrl = static fn (int $target): string => url('/consultation?' . ($query !== '' ? $query . '&' : '') . 'page=' . $target);
+$total = $summary['products'];
 ?>
 <div class="page-head">
     <div>
@@ -43,9 +47,9 @@ $exportLinks = [
 </div>
 
 <div class="mini-stats cols-4">
-    <div><span>Produits affichés</span><strong><?= e((string) $summary['products']) ?></strong></div>
-    <div><span>Quantité affichée</span><strong><?= e(qty($summary['quantity'])) ?></strong></div>
-    <div><span>Valeur affichée</span><strong><?= e(money($summary['value'])) ?></strong></div>
+    <div><span>Produits (filtrés)</span><strong><?= e((string) $summary['products']) ?></strong></div>
+    <div><span>Quantité (filtrée)</span><strong><?= e(qty($summary['quantity'])) ?></strong></div>
+    <div><span>Valeur (filtrée)</span><strong><?= e(money($summary['value'])) ?></strong></div>
     <div><span>Alertes seuil</span><strong class="<?= $summary['alerts'] > 0 ? 'text-warning' : '' ?>"><?= e((string) $summary['alerts']) ?></strong></div>
 </div>
 
@@ -254,4 +258,5 @@ $exportLinks = [
             </tbody>
         </table>
     </div>
+    <?php include __DIR__ . '/../partials/pager.php'; ?>
 </section>

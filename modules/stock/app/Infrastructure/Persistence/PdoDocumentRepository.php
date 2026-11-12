@@ -19,12 +19,46 @@ final class PdoDocumentRepository
     }
 
     /**
+     * Registre de documents (paginé).
+     *
      * @param array{q?: string, status?: string, location_id?: int, date_from?: string, date_to?: string,
-     *     motif?: string, supplier_id?: int, product_id?: int, amount_from?: float, amount_to?: float,
-     *     created_by?: int} $filters
+     *     motif?: string, supplier_id?: int, product_id?: int, product_q?: string, amount_from?: float,
+     *     amount_to?: float, created_by?: int, limit?: int, offset?: int} $filters
      * @return array<int, StockDocument>
      */
     public function search(string $type, array $filters = []): array
+    {
+        [$sql, $params] = $this->buildSearch($type, $filters);
+        $sql .= ' ORDER BY d.doc_date DESC, d.id DESC' . $this->limitClause($filters);
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(fn (array $row): StockDocument => $this->hydrateDocument($row), $stmt->fetchAll());
+    }
+
+    /**
+     * Nombre de documents correspondant aux filtres, indépendamment de la pagination.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function countSearch(string $type, array $filters = []): int
+    {
+        [$sql, $params] = $this->buildSearch($type, $filters);
+
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM (' . $sql . ') AS t');
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Construit la requête du registre, sans tri ni pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function buildSearch(string $type, array $filters): array
     {
         $sql = $this->baseSelect() . ' WHERE d.type = :type';
         $params = ['type' => $type];
@@ -61,6 +95,16 @@ final class PdoDocumentRepository
             $params['product_id'] = (int) $filters['product_id'];
         }
 
+        if (!empty($filters['product_q'])) {
+            $sql .= ' AND EXISTS (SELECT 1 FROM stock_document_lines xq
+                                  INNER JOIN products xqp ON xqp.id = xq.product_id
+                                  WHERE xq.document_id = d.id
+                                    AND (xqp.sku LIKE :pq1 OR xqp.designation LIKE :pq2))';
+            $like = '%' . trim((string) $filters['product_q']) . '%';
+            $params['pq1'] = $like;
+            $params['pq2'] = $like;
+        }
+
         if (!empty($filters['date_from'])) {
             $sql .= ' AND d.doc_date >= :date_from';
             $params['date_from'] = (string) $filters['date_from'];
@@ -94,12 +138,22 @@ final class PdoDocumentRepository
             }
         }
 
-        $sql .= ' ORDER BY d.doc_date DESC, d.id DESC LIMIT 1000';
+        return [$sql, $params];
+    }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+    /**
+     * Clause LIMIT/OFFSET optionnelle.
+     *
+     * @param array<string, mixed> $filters
+     */
+    private function limitClause(array $filters): string
+    {
+        $limit = (int) ($filters['limit'] ?? 0);
+        if ($limit <= 0) {
+            return '';
+        }
 
-        return array_map(fn (array $row): StockDocument => $this->hydrateDocument($row), $stmt->fetchAll());
+        return ' LIMIT ' . $limit . ' OFFSET ' . max(0, (int) ($filters['offset'] ?? 0));
     }
 
     public function find(int $id): ?StockDocument
@@ -241,11 +295,64 @@ final class PdoDocumentRepository
     }
 
     /**
+     * Journal des mouvements (paginé).
+     *
      * @param array{q?: string, location_id?: int, type?: string, date_from?: string, date_to?: string,
-     *     category_id?: int, brand_id?: int, direction?: string, limit?: int} $filters
+     *     category_id?: int, brand_id?: int, direction?: string, limit?: int, offset?: int} $filters
      * @return array<int, StockMovement>
      */
     public function movements(array $filters = []): array
+    {
+        [$sql, $params] = $this->buildMovements($filters);
+
+        $limit = max(1, min(1000, (int) ($filters['limit'] ?? 300)));
+        $offset = max(0, (int) ($filters['offset'] ?? 0));
+        $sql .= ' ORDER BY m.movement_date DESC, m.id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(static function (array $row): StockMovement {
+            $type = $row['doc_type'] !== null ? (string) $row['doc_type'] : 'inventaire';
+            $numero = $row['numero'] !== null ? (string) $row['numero'] : ($row['inventory_numero'] !== null ? (string) $row['inventory_numero'] : null);
+
+            return new StockMovement(
+                (int) $row['id'],
+                (string) $row['movement_date'],
+                (string) $row['direction'],
+                $type,
+                $row['motif'] !== null ? (string) $row['motif'] : ($type === 'inventaire' ? 'inventaire' : null),
+                $numero,
+                (string) $row['designation'],
+                (string) $row['sku'],
+                (string) $row['unit'],
+                (string) $row['location_name'],
+                (float) $row['qty'],
+                (float) $row['unit_cost'],
+                (float) $row['unit_price'],
+                (string) $row['user_name'],
+            );
+        }, $stmt->fetchAll());
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function movementsCount(array $filters = []): int
+    {
+        [$sql, $params] = $this->buildMovements($filters);
+
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM (' . $sql . ') AS t');
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Construit la requête du journal, sans tri ni pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function buildMovements(array $filters): array
     {
         $sql = 'SELECT m.id, m.movement_date, m.direction, m.qty, m.unit_cost, m.unit_price,
                        p.sku, p.designation, u.code AS unit, l.name AS location_name,
@@ -302,33 +409,7 @@ final class PdoDocumentRepository
             }
         }
 
-        $limit = max(1, min(1000, (int) ($filters['limit'] ?? 300)));
-        $sql .= ' ORDER BY m.movement_date DESC, m.id DESC LIMIT ' . $limit;
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return array_map(static function (array $row): StockMovement {
-            $type = $row['doc_type'] !== null ? (string) $row['doc_type'] : 'inventaire';
-            $numero = $row['numero'] !== null ? (string) $row['numero'] : ($row['inventory_numero'] !== null ? (string) $row['inventory_numero'] : null);
-
-            return new StockMovement(
-                (int) $row['id'],
-                (string) $row['movement_date'],
-                (string) $row['direction'],
-                $type,
-                $row['motif'] !== null ? (string) $row['motif'] : ($type === 'inventaire' ? 'inventaire' : null),
-                $numero,
-                (string) $row['designation'],
-                (string) $row['sku'],
-                (string) $row['unit'],
-                (string) $row['location_name'],
-                (float) $row['qty'],
-                (float) $row['unit_cost'],
-                (float) $row['unit_price'],
-                (string) $row['user_name'],
-            );
-        }, $stmt->fetchAll());
+        return [$sql, $params];
     }
 
     /** @return array<string, int> */

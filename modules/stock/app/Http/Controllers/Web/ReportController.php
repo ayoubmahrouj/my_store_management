@@ -18,6 +18,8 @@ use App\Infrastructure\Persistence\PdoReferenceRepository;
 
 final class ReportController
 {
+    private const PER_PAGE = 50;
+
     public function index(Request $request): Response
     {
         $filters = $this->filters($request);
@@ -25,46 +27,54 @@ final class ReportController
         $docRepo = new PdoDocumentRepository();
         $refs = new PdoReferenceRepository();
         $locations = $refs->locations(true);
+        $term = $filters['q'] !== '' ? $filters['q'] : null;
 
-        $products = $productRepo->search(
-            $filters['q'] !== '' ? $filters['q'] : null,
-            null,
-            true,
-            $this->productFilters($filters)
+        $summary = $productRepo->searchSummary($term, null, true, $this->productFilters($filters));
+        $pages = max(1, (int) ceil($summary['total'] / self::PER_PAGE));
+        $page = min(max(1, (int) $request->query('page', 1)), $pages);
+
+        $products = $productRepo->search($term, null, true, $this->productFilters($filters) + [
+            'limit'  => self::PER_PAGE,
+            'offset' => ($page - 1) * self::PER_PAGE,
+        ]);
+
+        $lowStock = array_merge(
+            $productRepo->search(null, null, true, array_merge($this->productFilters($filters), ['status' => 'out', 'sort' => 'low', 'limit' => 12])),
+            $productRepo->search(null, null, true, array_merge($this->productFilters($filters), ['status' => 'low', 'sort' => 'low', 'limit' => 12]))
         );
-
-        $lowStock = array_values(array_filter($products, static fn (Product $p): bool => $p->isLowStock() || $p->isOutOfStock()));
         usort($lowStock, static fn (Product $a, Product $b): int => $a->quantity() <=> $b->quantity());
 
         $byLocation = $productRepo->stockByLocation($filters);
-        $totalValue = 0.0;
-        $totalQuantity = 0.0;
-        $lowCount = 0;
-        foreach ($products as $product) {
-            $totalValue += $product->stockValue();
-            $totalQuantity += $product->quantity();
-            if ($product->isLowStock() || $product->isOutOfStock()) {
-                $lowCount++;
-            }
-        }
+
+        $movementsTotal = $docRepo->movementsCount($this->movementFilters($filters, 0));
+        $movementPages = max(1, (int) ceil($movementsTotal / self::PER_PAGE));
+        $movementPage = min(max(1, (int) $request->query('mp', 1)), $movementPages);
 
         return View::render('reports/index', [
             'title'      => 'Rapports',
             'stats'      => [
-                'total_value'    => $totalValue,
-                'total_quantity' => $totalQuantity,
-                'products'       => count($products),
-                'low_stock'      => $lowCount,
+                'total_value'    => $summary['value'],
+                'total_quantity' => $summary['quantity'],
+                'products'       => $summary['total'],
+                'low_stock'      => $summary['low'],
                 'locations'      => count($locations),
             ],
             'products'   => $products,
+            'page'       => $page,
+            'pages'      => $pages,
+            'total'      => $summary['total'],
             'lowStock'   => array_slice($lowStock, 0, 12),
             'categories' => $productRepo->stockByCategory($filters),
             'byLocation' => $byLocation,
             'locations'  => $locations,
             'brands'     => $refs->brands(true),
             'categoriesList' => $refs->categories(true),
-            'movements'  => $docRepo->movements($this->movementFilters($filters, 300)),
+            'movements'  => $docRepo->movements($this->movementFilters($filters, self::PER_PAGE) + [
+                'offset' => ($movementPage - 1) * self::PER_PAGE,
+            ]),
+            'movementPage'   => $movementPage,
+            'movementPages'  => $movementPages,
+            'movementsTotal' => $movementsTotal,
             'filters'    => $filters,
         ]);
     }

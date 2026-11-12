@@ -52,28 +52,38 @@ $q = trim((string) get('q'));
 $status = (string) get('status', 'active');
 $owed = (string) get('owed');
 
-$sql = 'SELECT c.*, COALESCE((SELECT SUM(remaining) FROM credits cr WHERE cr.client_id = c.id AND cr.status = \'open\'), 0) AS balance
-        FROM clients c WHERE c.is_passenger = 0';
+$where = ' WHERE c.is_passenger = 0';
 $params = [];
 
 if ($q !== '') {
-    $sql .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
+    $where .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
 }
 
 if ($status === 'active') {
-    $sql .= ' AND c.is_active = 1';
+    $where .= ' AND c.is_active = 1';
 } elseif ($status === 'inactive') {
-    $sql .= ' AND c.is_active = 0';
+    $where .= ' AND c.is_active = 0';
 }
 
-if ($owed === '1') {
-    $sql .= ' AND balance > 0';
-}
+$base = 'SELECT c.*, COALESCE((SELECT SUM(remaining) FROM credits cr WHERE cr.client_id = c.id AND cr.status = \'open\'), 0) AS balance
+         FROM clients c' . $where;
+$balanceFilter = $owed === '1' ? ' WHERE t.balance > 0' : '';
 
-$sql .= ' ORDER BY c.name';
-$clients = all($sql, $params);
+/* ------------------------------ Pagination ------------------------------ */
+
+$perPage = 50;
+$countRow = one('SELECT COUNT(*) AS n FROM (' . $base . ') AS t' . $balanceFilter, $params);
+$totalClients = (int) ($countRow['n'] ?? 0);
+$pages = max(1, (int) ceil($totalClients / $perPage));
+$page = min(max(1, (int) get('page', 1)), $pages);
+
+$clients = all(
+    'SELECT * FROM (' . $base . ') AS t' . $balanceFilter
+    . ' ORDER BY t.name LIMIT ' . $perPage . ' OFFSET ' . (($page - 1) * $perPage),
+    $params
+);
 
 /* ---------------------------- Édition / ajout --------------------------- */
 
@@ -170,6 +180,18 @@ print_header(t('clients'), $status === 'active' ? '' : t('show_inactive'));
             </tbody>
         </table>
     </div>
+    <?php if ($pages > 1): ?>
+        <div class="table-pager">
+            <span class="pager-info"><?= $totalClients ?> <?= e(t('results')) ?></span>
+            <div class="pager-nav">
+                <a class="pager-btn" href="<?= $page <= 1 ? '#' : e(url('clients', ['q' => $q, 'status' => $status, 'owed' => $owed, 'page' => $page - 1])) ?>"
+                   <?= $page <= 1 ? 'aria-disabled="true" tabindex="-1"' : '' ?> aria-label="Page précédente">&lsaquo;</a>
+                <span class="pager-page"><?= $page ?> / <?= $pages ?></span>
+                <a class="pager-btn" href="<?= $page >= $pages ? '#' : e(url('clients', ['q' => $q, 'status' => $status, 'owed' => $owed, 'page' => $page + 1])) ?>"
+                   <?= $page >= $pages ? 'aria-disabled="true" tabindex="-1"' : '' ?> aria-label="Page suivante">&rsaquo;</a>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Modale client -->

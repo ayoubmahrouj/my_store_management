@@ -1398,6 +1398,7 @@ table.data th.sortable:hover {
 .mt-8 { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
+.m-0 { margin: 0; }
 .w-full { width: 100%; }
 .hidden { display: none !important; }
 

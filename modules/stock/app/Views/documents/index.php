@@ -6,9 +6,11 @@
 /** @var array{draft: int, done: int, shipped: int, total: int, total_cost: float} $stats */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
 /** @var array<int, \App\Domain\Entities\Supplier> $suppliers */
-/** @var array<int, array{id: int, sku: string, designation: string, unit: string, purchase_cost: float, sale_price: float}> $products */
 /** @var array<string, string> $motifs */
-/** @var array{q: string, status: string, location_id: int, date_from: string, date_to: string, motif: string, supplier_id: int, product_id: int, amount_from: string, amount_to: string} $filters */
+/** @var array{q: string, status: string, location_id: int, date_from: string, date_to: string, motif: string, supplier_id: int, product_q: string, amount_from: string, amount_to: string} $filters */
+/** @var int $page */
+/** @var int $pages */
+/** @var int $total */
 $createLabel = match ($type) {
     'entree' => 'Nouvelle entrée',
     'sortie' => 'Nouvelle sortie',
@@ -28,7 +30,7 @@ $filterQuery = http_build_query(array_filter([
     'au'           => $filters['date_to'],
     'motif'        => $filters['motif'],
     'fournisseur'  => $filters['supplier_id'] ?: '',
-    'produit'      => $filters['product_id'] ?: '',
+    'produit'      => $filters['product_q'],
     'montant_min'  => $filters['amount_from'],
     'montant_max'  => $filters['amount_to'],
 ], static fn (mixed $value): bool => $value !== '' && $value !== null));
@@ -41,6 +43,7 @@ $exportLinks = [
     ['label' => 'Détail des lignes', 'format' => 'pdf', 'description' => 'Capital détaillé par produit et site', 'url' => $baseExport . '&detail=1&format=pdf'],
     ['label' => 'Détail des lignes', 'format' => 'csv', 'description' => 'Détail exploitable dans un tableur', 'url' => $baseExport . '&detail=1&format=csv'],
 ];
+$pageUrl = static fn (int $target): string => url($route . '?' . ($filterQuery !== '' ? $filterQuery . '&' : '') . 'page=' . $target);
 ?>
 <div class="page-head">
     <div>
@@ -113,14 +116,8 @@ $exportLinks = [
             <?php endif; ?>
             <div class="filter-field wide">
                 <label for="doc-product">Produit concerné</label>
-                <select id="doc-product" class="form-select" name="produit" data-quick="product">
-                    <option value="">Tous les produits</option>
-                    <?php foreach ($products as $product): ?>
-                        <option value="<?= (int) $product['id'] ?>" <?= $filters['product_id'] === (int) $product['id'] ? 'selected' : '' ?>>
-                            <?= e($product['sku']) ?> · <?= e($product['designation']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <input id="doc-product" class="form-control" type="text" name="produit"
+                       value="<?= e($filters['product_q']) ?>" placeholder="SKU ou nom du produit…">
             </div>
             <div class="filter-field">
                 <label for="doc-motif">Motif</label>
@@ -224,4 +221,5 @@ $exportLinks = [
             </tbody>
         </table>
     </div>
+    <?php include __DIR__ . '/../partials/pager.php'; ?>
 </section>

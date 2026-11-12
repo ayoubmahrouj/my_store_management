@@ -196,9 +196,11 @@ layout_start(t('pos'), 'pos');
 
             <div class="pos-search">
                 <div class="pos-search-row">
-                    <label class="field" style="flex:1">
+                    <label class="field pos-product-field" style="flex:1">
                         <span><?= e(t('product_or_free')) ?></span>
-                        <input type="text" id="pos-product" list="pos-products" placeholder="<?= e(t('pos_product_ph')) ?>">
+                        <input type="text" id="pos-product" placeholder="<?= e(t('pos_product_ph')) ?>" autocomplete="off"
+                               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pos-suggestions">
+                        <div class="pos-suggestions" id="pos-suggestions" role="listbox" hidden></div>
                     </label>
                     <label class="field pos-qty-field">
                         <span><?= e(t('qty')) ?></span>
@@ -210,12 +212,6 @@ layout_start(t('pos'), 'pos');
                     </label>
                     <button class="btn btn-primary pos-add" type="button" id="pos-add">+ <?= e(t('add_to_cart')) ?></button>
                 </div>
-
-                <datalist id="pos-products">
-                    <?php foreach ($productData as $product): ?>
-                        <option value="<?= e($product['label']) ?>"></option>
-                    <?php endforeach; ?>
-                </datalist>
             </div>
         </div>
 
@@ -308,6 +304,79 @@ layout_start(t('pos'), 'pos');
     var paidInput = document.getElementById('pos-paid');
     var remainingBox = document.getElementById('pos-remaining');
     var currency = <?= json_encode(CURRENCY) ?>;
+    var suggestions = document.getElementById('pos-suggestions');
+    var activeIndex = -1;
+    var matches = [];
+
+    function esc(value) {
+        return String(value).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function hideSuggestions() {
+        suggestions.hidden = true;
+        suggestions.innerHTML = '';
+        input.setAttribute('aria-expanded', 'false');
+        activeIndex = -1;
+        matches = [];
+    }
+
+    function renderSuggestions(query) {
+        query = (query || '').trim().toLowerCase();
+
+        if (query === '') {
+            hideSuggestions();
+            return;
+        }
+
+        matches = products.filter(function (product) {
+            return product.label.toLowerCase().indexOf(query) !== -1;
+        }).slice(0, 30);
+
+        if (! matches.length) {
+            hideSuggestions();
+            return;
+        }
+
+        suggestions.innerHTML = matches.map(function (product, index) {
+            return '<button type="button" class="pos-suggestion' + (index === 0 ? ' is-active' : '') + '" data-index="' + index + '">'
+                + '<span>' + esc(product.label) + '</span><em>' + format(product.price) + '</em></button>';
+        }).join('');
+
+        suggestions.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        activeIndex = 0;
+    }
+
+    function highlight(index) {
+        var items = suggestions.querySelectorAll('.pos-suggestion');
+
+        if (! items.length) {
+            return;
+        }
+
+        activeIndex = (index + items.length) % items.length;
+
+        Array.prototype.forEach.call(items, function (el, i) {
+            el.classList.toggle('is-active', i === activeIndex);
+        });
+
+        items[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    function pickSuggestion(index) {
+        var product = matches[index];
+
+        if (! product) {
+            return;
+        }
+
+        input.value = product.label;
+        priceInput.value = product.price.toFixed(2);
+        hideSuggestions();
+        qtyInput.focus();
+    }
 
     function format(value) {
         return value.toFixed(2).replace('.', ',') + ' ' + currency;
@@ -400,10 +469,60 @@ layout_start(t('pos'), 'pos');
         }
     });
 
+    input.addEventListener('input', function () {
+        renderSuggestions(input.value);
+    });
+
     input.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            if (suggestions.hidden) {
+                renderSuggestions(input.value);
+            } else {
+                highlight(activeIndex + 1);
+            }
+            return;
+        }
+
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (! suggestions.hidden) {
+                highlight(activeIndex - 1);
+            }
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            hideSuggestions();
+            return;
+        }
+
         if (event.key === 'Enter') {
             event.preventDefault();
+
+            if (! suggestions.hidden && matches.length) {
+                pickSuggestion(activeIndex >= 0 ? activeIndex : 0);
+                return;
+            }
+
             addLine();
+        }
+    });
+
+    suggestions.addEventListener('mousedown', function (event) {
+        var button = event.target.closest('.pos-suggestion');
+
+        if (! button) {
+            return;
+        }
+
+        event.preventDefault();
+        pickSuggestion(parseInt(button.getAttribute('data-index'), 10));
+    });
+
+    document.addEventListener('click', function (event) {
+        if (! event.target.closest('.pos-product-field')) {
+            hideSuggestions();
         }
     });
 

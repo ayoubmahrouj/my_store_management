@@ -23,22 +23,33 @@ abstract class DocumentController
     /** @var array<string, string> */
     protected array $motifs = [];
 
+    private const PER_PAGE = 50;
+
     public function index(Request $request): Response
     {
         $filters = $this->filters($request);
         $repo = new PdoDocumentRepository();
         $refs = new PdoReferenceRepository();
 
+        $total = $repo->countSearch($this->type, $filters);
+        $pages = max(1, (int) ceil($total / self::PER_PAGE));
+        $page = min(max(1, (int) $request->query('page', 1)), $pages);
+
         return View::render('documents/index', [
             'title'     => $this->label,
             'type'      => $this->type,
             'label'     => $this->label,
             'route'     => $this->route,
-            'documents' => $repo->search($this->type, $filters),
+            'documents' => $repo->search($this->type, $filters + [
+                'limit'  => self::PER_PAGE,
+                'offset' => ($page - 1) * self::PER_PAGE,
+            ]),
             'stats'     => $repo->stats($this->type),
+            'page'      => $page,
+            'pages'     => $pages,
+            'total'     => $total,
             'locations' => $refs->locations(true),
             'suppliers' => $this->type === 'entree' ? $refs->suppliers(true) : [],
-            'products'  => (new PdoProductRepository())->allActiveSimple(),
             'motifs'    => $this->motifs,
             'filters'   => $filters,
         ]);
@@ -345,7 +356,7 @@ abstract class DocumentController
         return Response::redirect(url($this->route . '/' . (int) $id));
     }
 
-    /** @return array{q: string, status: string, location_id: int, date_from: string, date_to: string, motif: string, supplier_id: int, product_id: int, amount_from: string, amount_to: string} */
+    /** @return array{q: string, status: string, location_id: int, date_from: string, date_to: string, motif: string, supplier_id: int, product_q: string, amount_from: string, amount_to: string} */
     private function filters(Request $request): array
     {
         return [
@@ -356,7 +367,7 @@ abstract class DocumentController
             'date_to'     => trim((string) $request->query('au', '')),
             'motif'       => trim((string) $request->query('motif', '')),
             'supplier_id' => (int) $request->query('fournisseur', 0),
-            'product_id'  => (int) $request->query('produit', 0),
+            'product_q'   => trim((string) $request->query('produit', '')),
             'amount_from' => trim((string) $request->query('montant_min', '')),
             'amount_to'   => trim((string) $request->query('montant_max', '')),
         ];
@@ -382,9 +393,8 @@ abstract class DocumentController
                 }
             }
         }
-        if ((int) $filters['product_id'] > 0) {
-            $product = (new PdoProductRepository())->findRaw((int) $filters['product_id']);
-            $meta[] = 'Produit : ' . ($product !== null ? $product['designation'] : '#' . (int) $filters['product_id']);
+        if ((string) $filters['product_q'] !== '') {
+            $meta[] = 'Produit : « ' . (string) $filters['product_q'] . ' »';
         }
         if ((string) $filters['motif'] !== '') {
             $meta[] = 'Motif : ' . ($this->motifs[(string) $filters['motif']] ?? ucfirst((string) $filters['motif']));

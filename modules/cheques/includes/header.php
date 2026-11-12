@@ -35,7 +35,6 @@ sh_layout_start([
     'active'     => $active,
     'nav'        => $nav,
     'extra_css'  => [
-        asset('vendor/bootstrap.min.css'),
         asset('css/app.css'),
         asset('css/php.css'),
     ],

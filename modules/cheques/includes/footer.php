@@ -28,7 +28,6 @@
 </div>
 
 <script src="<?= h(asset('vendor/jquery.min.js')) ?>"></script>
-<script src="<?= h(asset('vendor/bootstrap.bundle.min.js')) ?>"></script>
 <script>
     window.GC = {
         base: <?= json_encode(BASE_URL, JSON_UNESCAPED_SLASHES) ?>,

@@ -19,16 +19,70 @@ final class PdoProductRepository
     }
 
     /**
-     * Recherche avancée des produits.
+     * Recherche avancée des produits (paginée).
      *
      * @param array{
      *     brand_id?: int, category_id?: int, unit_id?: int, location_id?: int,
      *     status?: string, min_qty?: float, max_qty?: float,
-     *     min_value?: float, max_value?: float, sort?: string
+     *     min_value?: float, max_value?: float, sort?: string,
+     *     limit?: int, offset?: int
      * } $filters
      * @return array<int, Product>
      */
     public function search(?string $term = null, ?int $id = null, bool $activeOnly = true, array $filters = []): array
+    {
+        [$sql, $params] = $this->buildSearch($term, $id, $activeOnly, $filters);
+
+        $sort = (string) ($filters['sort'] ?? 'name');
+        $order = match ($sort) {
+            'value' => 'stock_value DESC, p.designation ASC',
+            'qty' => 'quantity DESC, p.designation ASC',
+            'low' => 'quantity ASC, p.designation ASC',
+            default => 'p.designation ASC',
+        };
+        $sql .= ' ORDER BY ' . $order . $this->limitClause($filters);
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(fn (array $row): Product => $this->hydrate($row), $stmt->fetchAll());
+    }
+
+    /**
+     * Totaux de la recherche courante, indépendants de la pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{total: int, quantity: float, value: float, low: int}
+     */
+    public function searchSummary(?string $term = null, ?int $id = null, bool $activeOnly = true, array $filters = []): array
+    {
+        [$sql, $params] = $this->buildSearch($term, $id, $activeOnly, $filters);
+
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) AS total,
+                    COALESCE(SUM(quantity), 0) AS quantity,
+                    COALESCE(SUM(stock_value), 0) AS value,
+                    COALESCE(SUM(CASE WHEN quantity <= min_stock THEN 1 ELSE 0 END), 0) AS low
+             FROM (' . $sql . ') AS t'
+        );
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'total'    => (int) ($row['total'] ?? 0),
+            'quantity' => (float) ($row['quantity'] ?? 0),
+            'value'    => (float) ($row['value'] ?? 0),
+            'low'      => (int) ($row['low'] ?? 0),
+        ];
+    }
+
+    /**
+     * Construit la requête de recherche filtrée, sans tri ni pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function buildSearch(?string $term, ?int $id, bool $activeOnly, array $filters): array
     {
         $locationId = (int) ($filters['location_id'] ?? 0);
         $locationJoin = '';
@@ -118,19 +172,22 @@ final class PdoProductRepository
             $sql .= ' HAVING ' . implode(' AND ', $having);
         }
 
-        $sort = (string) ($filters['sort'] ?? 'name');
-        $order = match ($sort) {
-            'value' => 'stock_value DESC, p.designation ASC',
-            'qty' => 'quantity DESC, p.designation ASC',
-            'low' => 'quantity ASC, p.designation ASC',
-            default => 'p.designation ASC',
-        };
-        $sql .= ' ORDER BY ' . $order;
+        return [$sql, $params];
+    }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+    /**
+     * Clause LIMIT/OFFSET optionnelle (valeurs entières validées, sans liaison de paramètre).
+     *
+     * @param array<string, mixed> $filters
+     */
+    private function limitClause(array $filters): string
+    {
+        $limit = (int) ($filters['limit'] ?? 0);
+        if ($limit <= 0) {
+            return '';
+        }
 
-        return array_map(fn (array $row): Product => $this->hydrate($row), $stmt->fetchAll());
+        return ' LIMIT ' . $limit . ' OFFSET ' . max(0, (int) ($filters['offset'] ?? 0));
     }
 
     public function find(int $id): ?Product
@@ -379,7 +436,94 @@ final class PdoProductRepository
      *     stock_value: float, sale_value: float, margin_value: float, positions: string
      * }>
      */
+    /**
+     * Consultation du stock (paginée).
+     *
+     * @param array<string, mixed> $filters
+     * @return array<int, array<string, mixed>>
+     */
     public function consultation(array $filters = []): array
+    {
+        [$sql, $params] = $this->buildConsultation($filters);
+
+        $sort = (string) ($filters['sort'] ?? 'value');
+        $order = match ($sort) {
+            'name' => 'p.designation ASC',
+            'qty_desc' => 'quantity DESC, p.designation ASC',
+            'qty_asc', 'low' => 'quantity ASC, p.designation ASC',
+            'value' => 'stock_value DESC, p.designation ASC',
+            'value_asc' => 'stock_value ASC, p.designation ASC',
+            'margin' => '(p.sale_price - p.purchase_cost) * quantity DESC, p.designation ASC',
+            default => 'stock_value DESC, p.designation ASC',
+        };
+        $sql .= ' ORDER BY ' . $order . $this->limitClause($filters);
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map(static function (array $row): array {
+            $quantity = (float) $row['quantity'];
+            $cost = (float) $row['purchase_cost'];
+            $price = (float) $row['sale_price'];
+
+            return [
+                'id'            => (int) $row['id'],
+                'sku'           => (string) $row['sku'],
+                'designation'   => (string) $row['designation'],
+                'brand'         => (string) $row['brand'],
+                'category'      => (string) $row['category'],
+                'unit'          => (string) $row['unit'],
+                'purchase_cost' => $cost,
+                'sale_price'    => $price,
+                'min_stock'     => (float) $row['min_stock'],
+                'quantity'      => $quantity,
+                'stock_value'   => (float) $row['stock_value'],
+                'sale_value'    => (float) $row['sale_value'],
+                'margin_value'  => ($price - $cost) * $quantity,
+                'positions'     => (string) $row['positions'],
+            ];
+        }, $stmt->fetchAll());
+    }
+
+    /**
+     * Totaux de la consultation courante, indépendants de la pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{total: int, quantity: float, value: float, sale_value: float, margin: float, alerts: int}
+     */
+    public function consultationSummary(array $filters = []): array
+    {
+        [$sql, $params] = $this->buildConsultation($filters);
+
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) AS total,
+                    COALESCE(SUM(quantity), 0) AS quantity,
+                    COALESCE(SUM(stock_value), 0) AS value,
+                    COALESCE(SUM(sale_value), 0) AS sale_value,
+                    COALESCE(SUM((sale_price - purchase_cost) * quantity), 0) AS margin,
+                    COALESCE(SUM(CASE WHEN quantity <= min_stock THEN 1 ELSE 0 END), 0) AS alerts
+             FROM (' . $sql . ') AS t'
+        );
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'total'      => (int) ($row['total'] ?? 0),
+            'quantity'   => (float) ($row['quantity'] ?? 0),
+            'value'      => (float) ($row['value'] ?? 0),
+            'sale_value' => (float) ($row['sale_value'] ?? 0),
+            'margin'     => (float) ($row['margin'] ?? 0),
+            'alerts'     => (int) ($row['alerts'] ?? 0),
+        ];
+    }
+
+    /**
+     * Construit la requête de consultation filtrée, sans tri ni pagination.
+     *
+     * @param array<string, mixed> $filters
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function buildConsultation(array $filters): array
     {
         $term = trim((string) ($filters['q'] ?? ''));
         $categoryId = (int) ($filters['category_id'] ?? 0);
@@ -387,7 +531,6 @@ final class PdoProductRepository
         $unitId = (int) ($filters['unit_id'] ?? 0);
         $locationId = (int) ($filters['location_id'] ?? 0);
         $status = (string) ($filters['status'] ?? '');
-        $sort = (string) ($filters['sort'] ?? 'value');
 
         $joinLocation = '';
         $params = [];
@@ -458,42 +601,7 @@ final class PdoProductRepository
             $sql .= ' HAVING ' . implode(' AND ', $having);
         }
 
-        $order = match ($sort) {
-            'name' => 'p.designation ASC',
-            'qty_desc' => 'quantity DESC, p.designation ASC',
-            'qty_asc', 'low' => 'quantity ASC, p.designation ASC',
-            'value' => 'stock_value DESC, p.designation ASC',
-            'value_asc' => 'stock_value ASC, p.designation ASC',
-            'margin' => '(p.sale_price - p.purchase_cost) * quantity DESC, p.designation ASC',
-            default => 'stock_value DESC, p.designation ASC',
-        };
-        $sql .= ' ORDER BY ' . $order . ' LIMIT 2000';
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        return array_map(static function (array $row): array {
-            $quantity = (float) $row['quantity'];
-            $cost = (float) $row['purchase_cost'];
-            $price = (float) $row['sale_price'];
-
-            return [
-                'id'            => (int) $row['id'],
-                'sku'           => (string) $row['sku'],
-                'designation'   => (string) $row['designation'],
-                'brand'         => (string) $row['brand'],
-                'category'      => (string) $row['category'],
-                'unit'          => (string) $row['unit'],
-                'purchase_cost' => $cost,
-                'sale_price'    => $price,
-                'min_stock'     => (float) $row['min_stock'],
-                'quantity'      => $quantity,
-                'stock_value'   => (float) $row['stock_value'],
-                'sale_value'    => (float) $row['sale_value'],
-                'margin_value'  => ($price - $cost) * $quantity,
-                'positions'     => (string) $row['positions'],
-            ];
-        }, $stmt->fetchAll());
+        return [$sql, $params];
     }
 
     /** @param array<string, mixed> $row */

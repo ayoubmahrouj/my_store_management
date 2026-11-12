@@ -1,7 +1,9 @@
 <?php
 /** @var string $term */
 /** @var array<int, \App\Domain\Entities\Product> $products */
-/** @var array{total_value: float, total_quantity: float, products: int, low_stock: int, locations: int} $stats */
+/** @var array{total: int, quantity: float, value: float, low: int} $summary */
+/** @var int $page */
+/** @var int $pages */
 /** @var bool $showInactive */
 /** @var bool $canManage */
 /** @var array<string, mixed> $filters */
@@ -9,8 +11,6 @@
 /** @var array<int, \App\Domain\Entities\Brand> $brands */
 /** @var array<int, \App\Domain\Entities\Category> $categories */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
-$lowCount = count(array_filter($products, static fn (\App\Domain\Entities\Product $p): bool => $p->isLowStock()));
-$totalValue = array_sum(array_map(static fn (\App\Domain\Entities\Product $p): float => $p->stockValue(), $products));
 $filterQuery = http_build_query(array_filter([
     'q'          => $filters['q'],
     'marque'     => $filters['brand_id'] ?: '',
@@ -30,6 +30,8 @@ $exportLinks = [
     ['label' => 'Liste des produits', 'format' => 'pdf', 'description' => 'Document imprimable, prêt à archiver', 'url' => url('/produits/export?' . $filterQuery . '&format=pdf')],
     ['label' => 'Liste des produits', 'format' => 'csv', 'description' => 'Données brutes compatibles tableur', 'url' => url('/produits/export?' . $filterQuery . '&format=csv')],
 ];
+$pageUrl = static fn (int $target): string => url('/produits?' . ($filterQuery !== '' ? $filterQuery . '&' : '') . 'page=' . $target);
+$total = $summary['total'];
 ?>
 <div class="page-head">
     <div>
@@ -49,9 +51,9 @@ $exportLinks = [
 </div>
 
 <div class="mini-stats">
-    <div><span>Produits affichés</span><strong><?= e((string) count($products)) ?></strong></div>
-    <div><span>Valeur affichée</span><strong><?= e(money($totalValue)) ?></strong></div>
-    <div><span>Sous le seuil</span><strong class="<?= $lowCount > 0 ? 'text-warning' : '' ?>"><?= e((string) $lowCount) ?></strong></div>
+    <div><span>Produits (filtrés)</span><strong><?= e((string) $summary['total']) ?></strong></div>
+    <div><span>Valeur (filtrée)</span><strong><?= e(money($summary['value'])) ?></strong></div>
+    <div><span>Sous le seuil</span><strong class="<?= $summary['low'] > 0 ? 'text-warning' : '' ?>"><?= e((string) $summary['low']) ?></strong></div>
 </div>
 
 <section class="panel">
@@ -241,4 +243,5 @@ $exportLinks = [
             </tbody>
         </table>
     </div>
+    <?php include __DIR__ . '/../partials/pager.php'; ?>
 </section>

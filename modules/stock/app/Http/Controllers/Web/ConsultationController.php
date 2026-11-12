@@ -12,39 +12,38 @@ use App\Infrastructure\Persistence\PdoReferenceRepository;
 
 final class ConsultationController
 {
+    private const PER_PAGE = 50;
+
     public function index(Request $request): Response
     {
         $filters = $this->filters($request);
-        $rows = (new PdoProductRepository())->consultation($filters);
+        $repo = new PdoProductRepository();
 
-        $quantity = 0.0;
-        $value = 0.0;
-        $saleValue = 0.0;
-        $alerts = 0;
-        foreach ($rows as $row) {
-            $quantity += (float) $row['quantity'];
-            $value += (float) $row['stock_value'];
-            $saleValue += (float) $row['sale_value'];
-            if ((float) $row['quantity'] <= (float) $row['min_stock']) {
-                $alerts++;
-            }
-        }
+        $totals = $repo->consultationSummary($filters);
+        $pages = max(1, (int) ceil($totals['total'] / self::PER_PAGE));
+        $page = min(max(1, (int) $request->query('page', 1)), $pages);
+        $rows = $repo->consultation($filters + [
+            'limit'  => self::PER_PAGE,
+            'offset' => ($page - 1) * self::PER_PAGE,
+        ]);
 
         return View::render('consultation/index', [
             'title'      => 'Consultation',
             'rows'       => $rows,
+            'page'       => $page,
+            'pages'      => $pages,
             'filters'    => $filters,
             'locations'  => (new PdoReferenceRepository())->locations(true),
             'categories' => (new PdoReferenceRepository())->categories(true),
             'brands'     => (new PdoReferenceRepository())->brands(true),
             'units'      => (new PdoReferenceRepository())->units(true),
             'summary'    => [
-                'products'  => count($rows),
-                'quantity'  => $quantity,
-                'value'     => $value,
-                'saleValue' => $saleValue,
-                'margin'    => $saleValue - $value,
-                'alerts'    => $alerts,
+                'products'  => $totals['total'],
+                'quantity'  => $totals['quantity'],
+                'value'     => $totals['value'],
+                'saleValue' => $totals['sale_value'],
+                'margin'    => $totals['margin'],
+                'alerts'    => $totals['alerts'],
             ],
             'canManage'  => in_array(auth_user()?->roleCode(), ['admin', 'responsable'], true),
         ]);

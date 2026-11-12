@@ -12,19 +12,61 @@ use Throwable;
 
 final class ReferenceController
 {
+    private const PER_PAGE = 40;
+
     public function index(Request $request): Response
     {
         $repo = new PdoReferenceRepository();
 
+        $brands = $repo->brands();
+        $categories = $repo->categories();
+        $suppliers = $repo->suppliers();
+
+        $brandsPage = $this->pageOf($request, 'pb', count($brands));
+        $categoriesPage = $this->pageOf($request, 'pc', count($categories));
+        $suppliersPage = $this->pageOf($request, 'pf', count($suppliers));
+
         return View::render('references/index', [
-            'title'      => 'Référentiels',
-            'brands'     => $repo->brands(),
-            'categories' => $repo->categories(),
-            'units'      => $repo->units(),
-            'suppliers'  => $repo->suppliers(),
-            'locations'  => $repo->locations(),
-            'canManage'  => Auth::isRole('admin', 'responsable'),
+            'title'          => 'Référentiels',
+            'brands'         => $this->slice($brands, $brandsPage),
+            'brandsTotal'    => count($brands),
+            'brandsPage'     => $brandsPage,
+            'brandsPages'    => $this->pages(count($brands)),
+            'categories'     => $this->slice($categories, $categoriesPage),
+            'categoriesTotal' => count($categories),
+            'categoriesPage' => $categoriesPage,
+            'categoriesPages' => $this->pages(count($categories)),
+            'units'          => $repo->units(),
+            'suppliers'      => $this->slice($suppliers, $suppliersPage),
+            'suppliersTotal' => count($suppliers),
+            'suppliersPage'  => $suppliersPage,
+            'suppliersPages' => $this->pages(count($suppliers)),
+            'locations'      => $repo->locations(),
+            'queryParams'    => array_filter(
+                ['pb' => $brandsPage, 'pc' => $categoriesPage, 'pf' => $suppliersPage],
+                static fn (int $value): bool => $value > 1
+            ),
+            'canManage'      => Auth::isRole('admin', 'responsable'),
         ]);
+    }
+
+    private function pages(int $total): int
+    {
+        return max(1, (int) ceil($total / self::PER_PAGE));
+    }
+
+    private function pageOf(Request $request, string $key, int $total): int
+    {
+        return min(max(1, (int) $request->query($key, 1)), $this->pages($total));
+    }
+
+    /**
+     * @param array<int, mixed> $items
+     * @return array<int, mixed>
+     */
+    private function slice(array $items, int $page): array
+    {
+        return array_slice($items, ($page - 1) * self::PER_PAGE, self::PER_PAGE);
     }
 
     public function store(Request $request, string $type): Response

@@ -1,10 +1,28 @@
 <?php
 /** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var int $brandsTotal */
+/** @var int $brandsPage */
+/** @var int $brandsPages */
 /** @var array<int, \App\Domain\Entities\Category> $categories */
+/** @var int $categoriesTotal */
+/** @var int $categoriesPage */
+/** @var int $categoriesPages */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
 /** @var array<int, \App\Domain\Entities\Supplier> $suppliers */
+/** @var int $suppliersTotal */
+/** @var int $suppliersPage */
+/** @var int $suppliersPages */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
+/** @var array<string, int> $queryParams */
 /** @var bool $canManage */
+$refPageUrl = static fn (string $param): callable => static function (int $target) use ($param, $queryParams): string {
+    $params = $queryParams;
+    $params[$param] = $target;
+    return url('/referentiels?' . http_build_query($params));
+};
+$renderPager = static function (int $page, int $pages, int $total, callable $pageUrl): void {
+    include __DIR__ . '/../partials/pager.php';
+};
 ?>
 <div class="page-head">
     <div>
@@ -25,7 +43,7 @@
 <div class="ref-grid">
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Marques</h3><p><?= count($brands) ?> marque(s)</p></div>
+            <div><h3>Marques</h3><p><?= (int) $brandsTotal ?> marque(s)</p></div>
             <span class="pill pill-muted"><i class="bi bi-tags"></i></span>
         </div>
         <?php if ($canManage): ?>
@@ -54,11 +72,12 @@
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php $renderPager($brandsPage, $brandsPages, $brandsTotal, $refPageUrl('pb')); ?>
     </section>
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Catégories</h3><p><?= count($categories) ?> catégorie(s)</p></div>
+            <div><h3>Catégories</h3><p><?= (int) $categoriesTotal ?> catégorie(s)</p></div>
             <span class="pill pill-muted"><i class="bi bi-diagram-3"></i></span>
         </div>
         <?php if ($canManage): ?>
@@ -87,6 +106,7 @@
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php $renderPager($categoriesPage, $categoriesPages, $categoriesTotal, $refPageUrl('pc')); ?>
     </section>
 
     <section class="panel">
@@ -163,7 +183,7 @@
 
     <section class="panel ref-span">
         <div class="panel-head">
-            <div><h3>Fournisseurs</h3><p><?= count($suppliers) ?> fournisseur(s)</p></div>
+            <div><h3>Fournisseurs</h3><p><?= (int) $suppliersTotal ?> fournisseur(s)</p></div>
             <span class="pill pill-muted"><i class="bi bi-truck"></i></span>
         </div>
         <?php if ($canManage): ?>
@@ -206,5 +226,6 @@
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php $renderPager($suppliersPage, $suppliersPages, $suppliersTotal, $refPageUrl('pf')); ?>
     </section>
 </div>

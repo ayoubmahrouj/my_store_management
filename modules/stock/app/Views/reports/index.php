@@ -9,6 +9,12 @@
 /** @var array<int, \App\Domain\Entities\Category> $categoriesList */
 /** @var array<int, \App\Domain\Entities\StockMovement> $movements */
 /** @var array{q: string, movement_type: string, direction: string, location_id: int, category_id: int, brand_id: int, status: string, date_from: string, date_to: string} $filters */
+/** @var int $page */
+/** @var int $pages */
+/** @var int $total */
+/** @var int $movementPage */
+/** @var int $movementPages */
+/** @var int $movementsTotal */
 $query = http_build_query(array_filter([
     'q'         => $filters['q'],
     'type'      => $filters['movement_type'],
@@ -20,6 +26,11 @@ $query = http_build_query(array_filter([
     'du'        => $filters['date_from'],
     'au'        => $filters['date_to'],
 ], static fn (mixed $value): bool => $value !== '' && $value !== null));
+$pageUrl = static fn (int $target): string => url('/rapports?' . ($query !== '' ? $query . '&' : '') . 'page=' . $target);
+$movementPageUrl = static fn (int $target): string => url('/rapports?' . ($query !== '' ? $query . '&' : '') . 'page=' . $page . '&mp=' . $target);
+$renderPager = static function (int $page, int $pages, int $total, callable $pageUrl): void {
+    include __DIR__ . '/../partials/pager.php';
+};
 $exportLinks = [
     ['label' => 'Rapport de stock', 'format' => 'xls', 'description' => 'Produits, quantités et valorisation', 'url' => url('/rapports/export?export=stock&' . $query . '&format=xls')],
     ['label' => 'Rapport de stock', 'format' => 'pdf', 'description' => 'Synthèse imprimable du stock', 'url' => url('/rapports/export?export=stock&' . $query . '&format=pdf')],
@@ -178,7 +189,7 @@ if ($maxLocation <= 0) {
 
 <section class="panel">
     <div class="panel-head panel-head-wrap">
-        <div><h3>Stock valorisé</h3><p><?= count($products) ?> produit(s) correspondant aux filtres</p></div>
+        <div><h3>Stock valorisé</h3><p><?= (int) $total ?> produit(s) correspondant aux filtres</p></div>
         <a class="btn btn-ghost btn-sm" href="<?= url('/rapports/export?export=stock&' . $query . '&format=xls') ?>"><i class="bi bi-file-earmark-excel"></i> Excel</a>
     </div>
     <div class="table-responsive">
@@ -222,6 +233,7 @@ if ($maxLocation <= 0) {
             </tbody>
         </table>
     </div>
+    <?php include __DIR__ . '/../partials/pager.php'; ?>
 </section>
 
 <section class="panel">
@@ -271,6 +283,7 @@ if ($maxLocation <= 0) {
             </tbody>
         </table>
     </div>
+    <?php $renderPager($movementPage, $movementPages, $movementsTotal, $movementPageUrl); ?>
 </section>
 
 <?php if ($lowStock !== []): ?>

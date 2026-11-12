@@ -14,17 +14,32 @@ use Throwable;
 
 final class ProductController
 {
+    private const PER_PAGE = 50;
+
     public function index(Request $request): Response
     {
         $filters = $this->filters($request);
         $repo = new PdoProductRepository();
         $refs = new PdoReferenceRepository();
+        $term = $filters['q'] !== '' ? $filters['q'] : null;
+        $activeOnly = !$filters['show_inactive'];
+
+        $summary = $repo->searchSummary($term, null, $activeOnly, $filters);
+        $pages = max(1, (int) ceil($summary['total'] / self::PER_PAGE));
+        $page = min(max(1, (int) $request->query('page', 1)), $pages);
+
+        $products = $repo->search($term, null, $activeOnly, $filters + [
+            'limit'  => self::PER_PAGE,
+            'offset' => ($page - 1) * self::PER_PAGE,
+        ]);
 
         return View::render('products/index', [
             'title'        => 'Produits',
             'term'         => $filters['q'],
-            'products'     => $repo->search($filters['q'] !== '' ? $filters['q'] : null, null, !$filters['show_inactive'], $filters),
-            'stats'        => $repo->stats(),
+            'products'     => $products,
+            'summary'      => $summary,
+            'page'         => $page,
+            'pages'        => $pages,
             'showInactive' => $filters['show_inactive'],
             'filters'      => $filters,
             'locations'    => $refs->locations(true),
