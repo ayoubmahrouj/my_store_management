@@ -104,6 +104,39 @@ nom aléatoire. Ils ne sont **jamais servis directement** : deux points d'entré
 protégés par la session les affichent (`bon_image.php`, `documents/image.php`).
 Formats acceptés : JPG, PNG, WEBP — 6 Mo maximum.
 
+## 4 ter. Données communes — une seule table par entité
+
+Aucune entité n'est dupliquée entre les modules : il existe **une table commune
+unique** par concept, partagée par Stock, Crédits et Chèques.
+
+| Entité | Table unique |
+|---|---|
+| Clients / bénéficiaires | `clients` |
+| Fournisseurs | `suppliers` |
+| Produits | `products` |
+| Marques | `brands` |
+| Catégories | `categories` |
+| Unités | `units` |
+| Sites / dépôts | `locations` |
+| Ventes / lignes | `sales` / `sale_items` |
+| Paiements | `payments` / `payment_allocations` |
+| Crédits / bons société | `credits` / `credit_bons` |
+| Stock | `stock_documents`, `stock_document_lines`, `stock_levels` |
+
+Les anciens noms utilisés par le code historique sont des **vues de
+compatibilité** (aucune donnée dupliquée) : `beneficiaire` → `clients`
+(modifiable), `credits_products` → `products`+`brands`, `personne` →
+`cheques_personnes`, `carnet` → `cheques_carnets`, `document_paiement` →
+`cheques_documents`, `alerte_config`/`alerte_log` → `cheques_alert_*`,
+`audit_log` → `audit_logs`.
+
+**Informations société** : source unique = table `settings`
+(clés `company_name`, `company_address`, `company_phone`, `company_email`),
+lue et écrite par le socle et le module Chèques. La table historique
+`parametres_societe` est conservée uniquement comme cible d'import ; elle n'est
+plus utilisée par l'application (`database/upgrade.php` reprend une fois ses
+valeurs vers `settings` si besoin).
+
 ## 5. Structure
 
 ```

@@ -454,19 +454,63 @@ function client_ip(): string
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '');
 }
 
-/** Paramètres de la société (ligne unique id = 1). */
+/**
+ * Paramètres de la société.
+ *
+ * Source unique : la table `settings` (clé/valeur) du socle unifié.
+ * La table historique `parametres_societe` n'est plus la référence : elle est
+ * conservée pour l'import et sert uniquement de repli si `settings` est vide.
+ */
 function societe(): array
 {
     static $societe = null;
-    if ($societe === null) {
-        $row = fetch_one('SELECT * FROM parametres_societe WHERE id = 1');
-        $societe = $row ?: [
-            'nom'       => APP_NAME,
-            'adresse'   => null,
-            'telephone' => null,
-            'email'     => null,
-        ];
+    if ($societe !== null) {
+        return $societe;
     }
+
+    $societe = ['nom' => '', 'adresse' => '', 'telephone' => '', 'email' => ''];
+
+    try {
+        $row = fetch_one(
+            "SELECT
+                MAX(CASE WHEN k = 'company_name'    THEN v END) AS nom,
+                MAX(CASE WHEN k = 'company_address' THEN v END) AS adresse,
+                MAX(CASE WHEN k = 'company_phone'   THEN v END) AS telephone,
+                MAX(CASE WHEN k = 'company_email'   THEN v END) AS email
+             FROM settings"
+        );
+        if (is_array($row)) {
+            foreach (['nom', 'adresse', 'telephone', 'email'] as $field) {
+                if (isset($row[$field]) && $row[$field] !== '') {
+                    $societe[$field] = (string) $row[$field];
+                }
+            }
+        }
+    } catch (Throwable) {
+        // Base non installée : valeurs par défaut conservées.
+    }
+
+    // Repli sur l'ancienne table (import legacy) uniquement si `settings` est vide.
+    if ($societe['nom'] === '') {
+        try {
+            $legacy = fetch_one('SELECT * FROM parametres_societe WHERE id = 1');
+            if (is_array($legacy)) {
+                $societe = [
+                    'nom'       => (string) ($legacy['nom'] ?? ''),
+                    'adresse'   => (string) ($legacy['adresse'] ?? ''),
+                    'telephone' => (string) ($legacy['telephone'] ?? ''),
+                    'email'     => (string) ($legacy['email'] ?? ''),
+                ];
+            }
+        } catch (Throwable) {
+            // Table absente : ignorée.
+        }
+    }
+
+    if ($societe['nom'] === '') {
+        $societe['nom'] = APP_NAME;
+    }
+
     return $societe;
 }
 

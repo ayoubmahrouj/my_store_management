@@ -120,4 +120,47 @@ if (!is_file($deny)) {
 }
 echo "[ OK ] Dossier storage/uploads prêt\n";
 
+/* -------------------------------------------------------------------------
+| 4. Informations société : source unique `settings`
+|
+| La table historique `parametres_societe` est conservée (cible d'import),
+| mais le socle lit et écrit désormais `settings`. On reprend une seule fois
+| ses valeurs si `settings` ne contient pas encore le nom de la société.
+|-------------------------------------------------------------------------*/
+
+$companyInSettings = '';
+try {
+    $companyInSettings = (string) $pdo->query("SELECT v FROM settings WHERE k = 'company_name' LIMIT 1")->fetchColumn();
+} catch (Throwable) {
+    $companyInSettings = 'skip';
+}
+
+$legacyTableExists = false;
+try {
+    $legacyTableExists = (bool) $pdo->query("SHOW TABLES LIKE 'parametres_societe'")->fetchColumn();
+} catch (Throwable) {
+    $legacyTableExists = false;
+}
+
+if ($companyInSettings === '' && $legacyTableExists) {
+    $legacy = $pdo->query('SELECT * FROM parametres_societe WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+    if (is_array($legacy)) {
+        $map = [
+            'company_name'    => $legacy['nom'] ?? '',
+            'company_address' => $legacy['adresse'] ?? '',
+            'company_phone'   => $legacy['telephone'] ?? '',
+            'company_email'   => $legacy['email'] ?? '',
+        ];
+        $set = $pdo->prepare('INSERT INTO settings (k, v, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE v = VALUES(v), updated_at = NOW()');
+        foreach ($map as $key => $value) {
+            if ((string) $value !== '') {
+                $set->execute([$key, (string) $value]);
+            }
+        }
+        echo "[ OK ] Informations société reprises de parametres_societe vers settings\n";
+    }
+} else {
+    echo "[ -- ] Informations société déjà dans settings (parametres_societe conservée pour l'import)\n";
+}
+
 echo "=== Mise à niveau terminée ===\n";

@@ -483,6 +483,9 @@ CREATE TABLE IF NOT EXISTS `cheques_alert_log` (
 -- Paramètres, audit, sécurité
 -- -------------------------------------------------------------------------
 
+-- Réglages applicatifs (clé/valeur). Source unique, entre autres, des
+-- informations société : company_name, company_address, company_phone,
+-- company_email (utilisées par le socle et le module Chèques).
 CREATE TABLE IF NOT EXISTS `settings` (
   `k` VARCHAR(80) NOT NULL,
   `v` TEXT DEFAULT NULL,
@@ -526,7 +529,11 @@ CREATE TABLE IF NOT EXISTS `document_sequences` (
   PRIMARY KEY (`type`, `year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Informations de la société affichées dans les documents (module Chèques).
+-- Table historique conservée comme cible d'import uniquement.
+-- La source unique des informations société est désormais `settings`
+-- (clés company_name / company_address / company_phone / company_email),
+-- lue et écrite par le socle et le module Chèques. Cette table n'est plus
+-- utilisée par l'application : voir database/upgrade.php (reprise unique).
 CREATE TABLE IF NOT EXISTS `parametres_societe` (
   `id` TINYINT UNSIGNED NOT NULL DEFAULT 1,
   `nom` VARCHAR(150) NOT NULL DEFAULT '',

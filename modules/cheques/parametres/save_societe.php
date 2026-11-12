@@ -30,11 +30,18 @@ if ($errors) {
     redirect('parametres/index.php');
 }
 
-q(
-    'INSERT INTO parametres_societe (id, nom, adresse, telephone, email) VALUES (1, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE nom = VALUES(nom), adresse = VALUES(adresse), telephone = VALUES(telephone), email = VALUES(email)',
-    [$nom, $adresse !== '' ? $adresse : null, $telephone !== '' ? $telephone : null, $email !== '' ? $email : null]
-);
+// Source unique des informations société : table `settings` du socle unifié.
+$map = [
+    'company_name'    => $nom,
+    'company_address' => $adresse,
+    'company_phone'   => $telephone,
+    'company_email'   => $email,
+];
+$upsert = 'INSERT INTO settings (k, v, updated_at) VALUES (?, ?, NOW())
+           ON DUPLICATE KEY UPDATE v = VALUES(v), updated_at = NOW()';
+foreach ($map as $key => $value) {
+    q($upsert, [$key, $value]);
+}
 
 audit('MODIFICATION', 'SOCIETE', 1, 'Paramètres société mis à jour');
 flash('success', t('Paramètres société enregistrés.'));
