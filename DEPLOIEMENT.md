@@ -78,6 +78,22 @@ LEGACY_CHEQUES_DB=mes_cheques php database/migrate_legacy.php --force
 > `--force` remplace les données de la base cible. Ne l'utilisez pas sur une
 > base déjà en production sans sauvegarde.
 
+### 1.4 ter Fusion additive (sans rien supprimer)
+
+Si la base unifiée contient **déjà** des données (par exemple un premier import
+`gestionmystock`) et que vous voulez seulement y **ajouter** ce qui manque depuis
+les trois anciennes bases, utilisez :
+
+```bash
+php database/merge_legacy_dumps.php --dry-run   # aperçu, aucune écriture
+php database/merge_legacy_dumps.php             # applique
+```
+
+Cette commande n'efface rien : elle ajoute uniquement les enregistrements absents
+(clients, produits, marques, chèques, ventes/crédits du module crédits). Elle est
+idempotente — une seconde exécution affiche « Rien à ajouter ». Les mêmes variables
+`LEGACY_*_DB` s'appliquent.
+
 ### 1.4 bis Importer l'ancien POS « gestionmystock »
 
 Si vos données de ventes / achats / clients proviennent de l'application

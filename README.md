@@ -35,10 +35,16 @@ Les trois dossiers d'origine restent intacts : `gestion_unifiee` est autonome.
 
 ```bash
 php database/install.php --fresh
-php database/migrate_legacy.php --force   # uniquement si les anciennes bases existent
+php database/migrate_legacy.php --force   # base neuve : réimporte les 3 anciennes bases
+php database/import_gestionmystock.php    # importe l'ancien POS gestionmystock
 php database/upgrade.php                  # ajoute les nouveautés (bons, images)
 php database/doctor.php                   # diagnostic
 ```
+
+> **Ajouter des données à une base déjà remplie, sans rien supprimer :**
+> `php database/merge_legacy_dumps.php` (fusion additive et idempotente, voir § 7).
+> Contrairement à `migrate_legacy.php --force` qui **vide puis réimporte**,
+> cette commande n'ajoute que les enregistrements absents.
 
 5. Ouvrir <http://localhost/gestion_unifiee/login.php>.
 
@@ -176,7 +182,8 @@ La migration ne modifie **jamais** les anciennes bases : elle ne fait que lire
 ```bash
 php database/install.php --fresh          # recrée la base + données de base
 php database/install.php                  # crée les tables manquantes
-php database/migrate_legacy.php --force   # importe les anciennes données
+php database/migrate_legacy.php --force   # VIDE puis réimporte les anciennes données
+php database/merge_legacy_dumps.php       # AJOUTE seulement ce qui manque (sans rien vider)
 php database/import_gestionmystock.php    # importe l'ancien POS gestionmystock
 php database/backfill_stock_movements.php # reconstruit le grand livre des mouvements
 php database/upgrade.php                  # ajoute les nouveautés sans perte
@@ -184,6 +191,38 @@ php database/doctor.php                   # contrôle tables, vues, admin, logs
 ```
 
 Tous refusent de s'exécuter depuis un navigateur.
+
+### Différence entre `migrate_legacy.php` et `merge_legacy_dumps.php`
+
+| | `migrate_legacy.php --force` | `merge_legacy_dumps.php` |
+|---|---|---|
+| Effet | **vide** (TRUNCATE) puis réimporte | **ajoute** uniquement les lignes absentes |
+| Usage | installation neuve, base vide | base déjà remplie, on complète |
+| Doublons | non (base repartie de zéro) | non (clé naturelle + `import_map`) |
+| Idempotent | oui (mais réécrit tout) | oui (relance = 0 ajout) |
+
+`merge_legacy_dumps.php` lit les mêmes bases sources :
+
+| Module | Base lue (par défaut) | Variable d'environnement |
+|---|---|---|
+| Crédits | `gestion_credits` | `LEGACY_CREDITS_DB` |
+| Stock | `suivi_stock` | `LEGACY_STOCK_DB` |
+| Chèques | `gestion_cheques` | `LEGACY_CHEQUES_DB` |
+
+Options : `--dry-run` (simulation dans une transaction annulée, affiche ce qui
+serait ajouté), `--credits-db=…`, `--stock-db=…`, `--cheques-db=…`.
+
+Il fusionne : marques, catégories, unités, emplacements, fournisseurs, clients,
+produits, personnes/carnets/documents de chèques, ainsi que les ventes, lignes
+et crédits du module crédits. Les utilisateurs legacy ne sont pas importés (le
+compte `admin` unifié est conservé) et les échéances legacy (`installments`) ne
+sont pas stockées (leur date est reprise dans `credits.due_date`).
+
+```bash
+php database/merge_legacy_dumps.php --dry-run   # aperçu, aucune écriture
+php database/merge_legacy_dumps.php             # applique
+```
+
 
 ### Sauvegarde et restauration
 
