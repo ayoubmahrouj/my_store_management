@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------
+# Gestion Our Stock — fichiers exclus du dépôt
+# ---------------------------------------------------------------------------
+
+# Secrets et configuration locale (ne jamais committer les identifiants)
+.env
+.env.*
+!.env.example
+config.local.php
+
+# Dossiers d'exécution (logs, cache, exports, téléversements, sauvegardes)
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/cache/*
+!/storage/cache/.gitkeep
+/storage/exports/*
+!/storage/exports/.gitkeep
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+!/storage/uploads/.htaccess
+/storage/backups/*
+!/storage/backups/.gitkeep
+
+# Journaux
+*.log
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo

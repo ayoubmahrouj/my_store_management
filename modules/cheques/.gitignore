@@ -1,0 +1,25 @@
+# Secrets et configuration locale
+.env
+.env.*
+config/local.php
+
+# Dumps de base de données contenant des données réelles
+gestion_cheques.sql
+database/*
+!database/schema.sql
+!database/README.md
+*.sql.gz
+*.dump
+
+# Fichiers générés
+storage/*
+!storage/.gitkeep
+!storage/.htaccess
+*.zip
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

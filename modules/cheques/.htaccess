@@ -1,0 +1,46 @@
+# Protection globale de l'application
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "same-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Fichiers et dossiers cachés (.git, .env, .htaccess, etc.)
+    RewriteRule (^|/)\. - [F,L]
+
+    # Dossiers internes : jamais accessibles directement par URL
+    RewriteRule ^(config|includes|lib|storage|database)(/|$) - [F,L,NC]
+
+    # Fichiers techniques de l'application
+    RewriteRule ^(bootstrap|router)\.php$ - [F,L,NC]
+
+    # Fichiers sensibles ou non destinés au public
+    RewriteRule \.(sql|sqlite|db|log|ini|env|bak|old|zip|tar|gz|md|json|lock|yml|yaml)$ - [F,L,NC]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(sql|sqlite|db|log|ini|env|bak|old|zip|tar|gz|md|json|lock|yml|yaml)$">
+    Require all denied
+</FilesMatch>
+
+<Files "bootstrap.php">
+    Require all denied
+</Files>
+
+<Files "router.php">
+    Require all denied
+</Files>

@@ -1,0 +1,54 @@
+# =========================================================================
+# Gestion Our Stock — configuration Apache (racine de l'application)
+# =========================================================================
+
+Options -Indexes
+DirectoryIndex index.php
+AddDefaultCharset UTF-8
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Dossiers internes : jamais accessibles par URL
+    RewriteRule ^(shared|database|storage)(/|$) - [F,L,NC]
+
+    # Fichiers de travail / sauvegardes
+    RewriteRule \.(sql|log|bak|old|zip|tar|gz|ini|env)$ - [F,L,NC]
+    RewriteRule (^|/)\. - [F,L]
+
+    # Front controller du module Stock (URLs sans .php)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^modules/stock(/.*)?$ modules/stock/index.php [QSA,L]
+</IfModule>
+
+# Fichiers cachés
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Configuration et sauvegardes
+<FilesMatch "\.(sql|log|ini|env|bak|old|zip|tar|gz)$">
+    Require all denied
+</FilesMatch>
+
+# Fichiers sensibles
+<Files "config.local.php">
+    Require all denied
+</Files>
+<Files "router.php">
+    Require all denied
+</Files>
+<Files "composer.json">
+    Require all denied
+</Files>

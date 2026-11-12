@@ -1,0 +1,22 @@
+DirectoryIndex index.php
+Options -Indexes
+AddDefaultCharset UTF-8
+
+# Fichiers cachés (.git, .env, .gitignore, .htaccess...)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Fichiers techniques / sensibles
+<FilesMatch "\.(sql|sqlite|db|log|ini|env|bak|old|zip|tar|gz|md|json|lock|yml|yaml)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # URLs propres (optionnel) : /clients -> index.php?p=clients
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([a-z_]+)/?$ index.php?p=$1 [L,QSA]
+</IfModule>

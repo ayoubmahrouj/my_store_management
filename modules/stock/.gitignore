@@ -1,0 +1,25 @@
+# Runtime
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/cache/*
+!/storage/cache/.gitkeep
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+/config/config.local.php
+
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
