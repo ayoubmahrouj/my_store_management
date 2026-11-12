@@ -26,18 +26,19 @@ define('DEBUG', false);
 
 ## Scripts SQL
 
-- `database/schema_mysql.sql` : crée la base et les 10 tables (schéma natif).
-- `database/copie_depuis_gestion_credits.sql` : recopie les données depuis la base `gestion_credits` (lecture seule).
-- `database/migration_brand_sale_items.sql` : ajoute la marque (`sale_items.brand`) sur une base déjà installée.
+L'application unifiée utilise un **schéma unique** : [`../../database/schema.sql`](../../database/schema.sql) (racine du projet).
 
-Import :
+L'ancien schéma autonome de ce module (`schema_mysql.sql`, `copie_depuis_gestion_credits.sql`,
+`migration_brand_sale_items.sql`) a été archivé dans
+`storage/backups/legacy_module_databases_20261112/credits_database/` (hors dépôt).
+
+Import de la base unifiée :
 
 ```powershell
-Get-Content database\schema_mysql.sql -Raw | C:\xampp\mysql\bin\mysql.exe -u root
-Get-Content database\copie_depuis_gestion_credits.sql -Raw | C:\xampp\mysql\bin\mysql.exe -u root
+Get-Content database\schema.sql -Raw | C:\xampp\mysql\bin\mysql.exe -u root
 ```
 
-Les fichiers `.sql` et le dossier `database/` sont bloqués par `.htaccess` (HTTP 403).
+Le dossier `database/` est bloqué par `.htaccess` (HTTP 403).
 
 ## Sauvegarde
 
@@ -47,7 +48,7 @@ Les fichiers `.sql` et le dossier `database/` sont bloqués par `.htaccess` (HTT
 ## Sécurité
 
 - `DEBUG = false` (aucune erreur PHP affichée).
-- Dossiers `inc/`, `pages/`, `data/`, `database/` interdits en HTTP.
+- Dossiers `inc/`, `pages/`, `data/` interdits en HTTP.
 - Fichiers cachés, `.sql`, `.log`, `.md`, `.json`, etc. interdits en HTTP.
 - Accès limité au réseau local : ne pas exposer Apache sur Internet.
 - Recommandé : changer `admin123` et définir un mot de passe pour MySQL `root`.

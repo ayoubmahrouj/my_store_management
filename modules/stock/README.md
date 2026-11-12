@@ -46,29 +46,24 @@ Les actions **Nouveau / Nouvelle** ouvrent le formulaire de création dans une f
 Depuis la racine du projet :
 
 ```powershell
-php stock/database/install.php --fresh --empty
+php database/install.php --fresh
 ```
 
 Cette commande :
 
-1. recrée la base `suivi_stock` ;
-2. crée les tables ;
-3. insère uniquement les **5 rôles**, le **compte administrateur** et les **paramètres essentiels**.
+1. recrée la base `gestion_our_stock` ;
+2. crée toutes les tables et vues ;
+3. insère uniquement les **rôles**, le **compte administrateur** et les **paramètres essentiels**.
 
 Aucun produit, site, marque, catégorie, unité, fournisseur ou mouvement n'est créé.
 
-### Installation de démonstration
-
-Pour charger le jeu de données de démonstration (dev uniquement) :
-
-```powershell
-php stock/database/install.php --fresh
-```
+> L'ancien installeur autonome de ce module (`stock/database/install.php`) a été archivé dans
+> `storage/backups/legacy_module_databases_20261112/stock_database/` (hors dépôt).
 
 ## Lancement local
 
 ```powershell
-php -S 127.0.0.1:8080 -t stock stock/router.php
+php -S 127.0.0.1:8080 router.php
 ```
 
 Ouvrir : **http://127.0.0.1:8080**
@@ -138,7 +133,7 @@ Surcharger par variables d'environnement :
 |---|---|
 | `DB_HOST` | `127.0.0.1` |
 | `DB_PORT` | `3306` |
-| `DB_NAME` | `suivi_stock` |
+| `DB_NAME` | `gestion_our_stock` |
 | `DB_USER` | `root` |
 | `DB_PASS` | *(vide)* |
 | `APP_BASE` | détecté automatiquement |
@@ -169,7 +164,7 @@ Le diagnostic vérifie PHP, les extensions, les droits d'écriture, la connexion
 ## Structure
 
 ```
-stock/
+modules/stock/
 ├── index.php              Front controller (MVC + API)
 ├── router.php             Routeur du serveur PHP intégré
 ├── app/
@@ -181,17 +176,18 @@ stock/
 │   └── Views/             Vues premium
 ├── assets/                CSS / JS
 ├── config/                Configuration
-├── database/              schema.sql, install.php, doctor.php, seeds
 ├── deploy/                Exemple de configuration Nginx
 ├── docs/                  Rapport d'audit et documents projet (protégé)
 └── storage/               Logs et fichiers d'exécution (protégé)
 ```
 
+> Le schéma et les scripts d'installation sont **mutualisés** à la racine : `database/`.
+
 ## Déploiement serveur
 
 ### Apache
 
-Le fichier `.htaccess` protège les dossiers `app`, `config`, `database`, `docs` et `storage`, et bloque les fichiers sensibles (`.sql`, `.log`, `.env`, `.md`, etc.). `mod_rewrite` doit être activé.
+Le fichier `.htaccess` protège les dossiers `app`, `config`, `docs` et `storage`, et bloque les fichiers sensibles (`.sql`, `.log`, `.env`, `.md`, etc.). `mod_rewrite` doit être activé.
 
 ### Nginx
 
@@ -207,7 +203,7 @@ Adaptez `server_name`, `root` et le socket PHP-FPM, puis vérifiez que les dossi
 
 1. Définir `APP_ENV=production` et `APP_DEBUG=0`.
 2. Activer HTTPS et rediriger HTTP vers HTTPS.
-3. Utiliser un utilisateur MySQL dédié, avec des droits limités à la base `suivi_stock`.
+3. Utiliser un utilisateur MySQL dédié, avec des droits limités à la base `gestion_our_stock`.
 4. Ne pas créer `config/config.local.php` en production.
 5. Vérifier les droits d'écriture uniquement sur `storage/`.
 6. Lancer `php database/doctor.php`.

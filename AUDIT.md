@@ -93,22 +93,23 @@ lignes filtrées (indépendant de la page affichée).
 
 ## 6. Points ouverts (à valider)
 
-### 6.1 POS — 332 Ko
+### 6.1 POS — 332 Ko — ✅ conservé (décision)
 Le POS charge les 3 247 produits côté client pour l'auto-complétion immédiate (hors-ligne).
-Options possibles :
-- **Statut quo** (recommandé) : usage caisse, latence nulle, ~40 Ko gzip.
-- Auto-complétion serveur (`/api/v1/products?q=`) : page plus légère mais dépend du réseau à chaque frappe.
+C'est le **seul écran** où charger l'intégralité des produits est justifié (usage caisse, coupures réseau).
+Décision : **statu quo** (~40 Ko gzip, latence nulle). Alternative écartée : auto-complétion serveur
+(`/api/v1/products?q=`), plus légère mais dépendante du réseau à chaque frappe.
 
-### 6.2 Dossiers `database/` au niveau des modules (héritage)
+### 6.2 Dossiers `database/` au niveau des modules (héritage) — ✅ traité
 `modules/stock/database/`, `modules/credits/database/`, `modules/cheques/database/`
-sont des **schémas hérités** des anciens modules autonomes. Aucun code ne les référence ;
-le schéma actif est `database/schema.sql` (racine). Seuls les `.md` des modules les citent encore.
-→ **Rien n'a été supprimé** (fichiers préservés). Recommandation : archiver vers
-`storage/backups/legacy_module_databases_20261112/` et mettre à jour les 3 `.md`.
+étaient des **schémas hérités** des anciens modules autonomes (aucun code ne les référençait).
+Ils ont été **archivés — rien n'a été supprimé** — vers
+`storage/backups/legacy_module_databases_20261112/`, et les documents concernés
+(`stock/README.md`, `credits/DEPLOIEMENT.md`, `cheques/README.md`) pointent désormais vers
+le schéma racine `database/schema.sql`.
 
-### 6.3 Hébergement cPanel
-Activer **mod_deflate/gzip** (HTML/JSON/CSS/JS) : les pages ci-dessus tombent à ~20–50 Ko sur le réseau.
-Un `.htaccess` avec `AddOutputFilterByType DEFLATE` peut être ajouté.
+### 6.3 Hébergement cPanel — ✅ traité
+Le `.htaccess` racine active **mod_deflate** (HTML, JSON, CSS, JS, SVG) et un cache navigateur
+pour les images/polices. Sur Apache/cPanel, les pages ci-dessus tombent à **~20–50 Ko sur le réseau**.
 
 ---
 

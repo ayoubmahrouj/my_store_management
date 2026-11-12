@@ -53,7 +53,7 @@ La connexion est configurée dans `config/config.php` et peut être surchargée 
 
 ## Base de données
 
-Le dépôt contient la **structure** dans [`database/schema.sql`](database/schema.sql). Les données réelles (documents, clients, coordonnées) ne sont pas versionnées. Pour migrer une base existante, faire un export SQL local et l'importer sur le nouveau PC. Voir [`database/README.md`](database/README.md).
+Le schéma de référence de l'application unifiée est [`../../database/schema.sql`](../../database/schema.sql) (racine du projet). Les données réelles (documents, clients, coordonnées) ne sont pas versionnées. Pour migrer une base existante, faire un export SQL local et l'importer sur le nouveau PC ; voir le [`README.md`](../../README.md) à la racine pour la procédure par source.
 
 ## Lancer en local
 
