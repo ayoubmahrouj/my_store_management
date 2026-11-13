@@ -179,6 +179,44 @@ function write_mysql_defaults(string $dir, array $db): string
     return $file;
 }
 
+/**
+ * Rend un dump MySQL 8 restaurable sur MariaDB.
+ *
+ * mysqldump (MySQL 8) écrit des collations et options propres à MySQL 8 que
+ * MariaDB refuse (#1273 Unknown collation, ENCRYPTION inconnu). On les remplace
+ * par des équivalents compatibles afin qu'une sauvegarde prise sur MySQL 8
+ * puisse être restaurée sur MariaDB (XAMPP, cPanel, etc.).
+ */
+function normalize_dump_for_mariadb(string $file): void
+{
+    $sql = @file_get_contents($file);
+    if ($sql === false || $sql === '') {
+        return;
+    }
+
+    $original = $sql;
+
+    // Collations utf8mb4_0900_* (MySQL 8.0) -> utf8mb4_unicode_ci (universelle).
+    $sql = str_replace(
+        [
+            'utf8mb4_0900_ai_ci',
+            'utf8mb4_0900_as_ci',
+            'utf8mb4_0900_as_cs',
+            'utf8mb4_0900_ai_cs',
+            'utf8mb4_0900_bin',
+        ],
+        'utf8mb4_unicode_ci',
+        $sql
+    );
+
+    // Option de chiffrement au niveau base (MySQL 8.0.16+) ignorée par MariaDB.
+    $sql = str_replace("/*!80016 DEFAULT ENCRYPTION='N' */", '', $sql);
+
+    if ($sql !== $original) {
+        @file_put_contents($file, $sql);
+    }
+}
+
 /* -------------------------------------------------------------------------
 | Actions
 |-------------------------------------------------------------------------*/
@@ -261,6 +299,9 @@ if ($code !== 0 || !is_file($dumpFile) || filesize($dumpFile) === 0) {
     @unlink($dumpFile);
     fail('La sauvegarde a échoué. Vérifiez mysqldump et les identifiants MySQL.');
 }
+
+// Portabilité MySQL 8 -> MariaDB (collations 0900, ENCRYPTION).
+normalize_dump_for_mariadb($dumpFile);
 
 $sizeMb = round((filesize($dumpFile) ?: 0) / 1048576, 1);
 out("Base sauvegardée : {$dumpFile} ({$sizeMb} Mo)");
