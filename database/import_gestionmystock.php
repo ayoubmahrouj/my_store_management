@@ -20,7 +20,7 @@ declare(strict_types=1);
  *   - clients                  -> clients (dédupliqués)
  *   - fournisseurs             -> fournisseurs
  *   - ventes + lignes          -> sales + sale_items
- *   - soldes non réglés        -> credits
+ *   - soldes non réglés        -> credits (crédits d'ouverture inclus)
  *   - paiements clients        -> payments + payment_allocations
  *   - achats                   -> stock_documents (entrée, historique)
  *   - clients credit_project   -> clients (si la base existe)
@@ -260,6 +260,7 @@ $counts = [
     'achats' => 0,
     'lignes_achat' => 0,
     'clients_credit_project' => 0,
+    'soldes' => 0,
 ];
 
 if ($dryRun) {
@@ -287,8 +288,8 @@ if ($force) {
     }
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
-    $del = $pdo->prepare('DELETE FROM import_map WHERE source = ? AND entity IN (?, ?, ?, ?, ?, ?)');
-    $del->execute([$sourceDb, 'sale', 'sale_item', 'sale_items_done', 'payment', 'credit', 'purchase']);
+    $del = $pdo->prepare('DELETE FROM import_map WHERE source = ? AND entity IN (?, ?, ?, ?, ?, ?, ?)');
+    $del->execute([$sourceDb, 'sale', 'sale_item', 'sale_items_done', 'payment', 'credit', 'purchase', 'balance']);
 
     if (source_table_exists($pdo, $sourceDb, 'achat')) {
         $docIds = $pdo->query("SELECT id FROM stock_documents WHERE notes LIKE 'Import gestionmystock achat %'")->fetchAll(PDO::FETCH_COLUMN);
@@ -750,6 +751,77 @@ foreach (source_rows($pdo, $sourceDb, 'paiementclient', 'ID') as $row) {
 }
 $pdo->commit();
 out(sprintf('Paiements clients : %d', $counts['paiements']));
+
+/* -------------------------------------------------------------------------
+| Soldes clients non rattaches a une vente (credits d'ouverture)
+|
+| Le POS stocke le solde courant de chaque client dans client.CREANCE.
+| Une partie seulement provient des ventes (RESTE) ; le reste est un solde
+| d'ouverture. On cree pour la difference un credit « solde initial » relie
+| a une vente synthetique (total = 0, pour ne pas gonfler le chiffre
+| d'affaires). Sans cela, le solde du client n'apparait pas dans le module
+| Credits (client_balance = SUM(credits.remaining ouverts)).
+|-------------------------------------------------------------------------*/
+
+$openingSaleInsert = $pdo->prepare(
+    'INSERT INTO sales (client_id, user_id, date, subtotal, discount, total, paid, payment_method, status, note, created_at)
+     VALUES (?, ?, ?, 0, 0, 0, 0, ?, ?, ?, ?)'
+);
+$openingCreditInsert = $pdo->prepare(
+    'INSERT INTO credits (sale_id, client_id, amount, paid, remaining, due_date, status, created_at)
+     VALUES (?, ?, ?, 0, ?, NULL, ?, ?)'
+);
+$clientOpenRemaining = $pdo->prepare("SELECT COALESCE(SUM(remaining), 0) FROM credits WHERE client_id = ? AND status = 'open'");
+$clientFirstSale = $pdo->prepare('SELECT MIN(date) FROM sales WHERE client_id = ?');
+
+$counts['soldes'] = 0;
+
+$pdo->beginTransaction();
+foreach (source_rows($pdo, $sourceDb, 'client') as $row) {
+    $legacyId = (string) $row['ID'];
+    $creance = money($row['CREANCE']);
+    if ($creance <= 0.009) {
+        continue;
+    }
+    if (map_get($pdo, $sourceDb, 'balance', $legacyId, 'credits') !== null) {
+        continue;
+    }
+    $clientId = map_get($pdo, $sourceDb, 'client', $legacyId, 'clients');
+    if ($clientId === null) {
+        continue;
+    }
+
+    // On ne cree que la part non deja couverte par des credits existants.
+    $clientOpenRemaining->execute([$clientId]);
+    $already = money($clientOpenRemaining->fetchColumn());
+    $extra = money($creance - $already);
+    if ($extra <= 0.009) {
+        continue;
+    }
+
+    $clientFirstSale->execute([$clientId]);
+    $firstSale = (string) $clientFirstSale->fetchColumn();
+    $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $firstSale) ? $firstSale : date('Y-m-d');
+    $createdAt = $date . ' 12:00:00';
+
+    $openingSaleInsert->execute([
+        $clientId,
+        $adminId,
+        $date,
+        'credit',
+        'credit',
+        'Solde initial legacy (POS) · client #' . $legacyId,
+        $createdAt,
+    ]);
+    $saleId = (int) $pdo->lastInsertId();
+
+    $openingCreditInsert->execute([$saleId, $clientId, $extra, $extra, 'open', $createdAt]);
+    $creditId = (int) $pdo->lastInsertId();
+    map_set($pdo, $sourceDb, 'balance', $legacyId, $creditId);
+    $counts['soldes']++;
+}
+$pdo->commit();
+out(sprintf('Soldes clients (crédits d\'ouverture) : %d', $counts['soldes']));
 
 /* -------------------------------------------------------------------------
 | Achats -> documents d'entrée (historique)
