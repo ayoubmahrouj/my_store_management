@@ -23,7 +23,9 @@ set LEGACY_CREDITS_DB=gestion_credits
 set LEGACY_CHEQUES_DB=gestion_cheques
 
 REM ---- Ancien POS gestionmystock : mets 1 pour l'importer, 0 pour l'ignorer ---
-set IMPORT_POS=0
+REM ATTENTION : les VENTES / PAIEMENTS / CLIENTS reels viennent de ce POS.
+REM Mets 0 uniquement si tu ne veux PAS de l'historique des ventes.
+set IMPORT_POS=1
 set POS_DB=gestionmystock
 
 echo ============================================================

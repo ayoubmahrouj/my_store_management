@@ -382,10 +382,10 @@ foreach (source_rows($pdo, $sourceDb, 'client') as $row) {
 
     $clientInsert->execute([
         $name,
+        $type,
         $phone !== '' ? $phone : null,
         $address !== '' ? $address : null,
         $ice !== '' ? $ice : null,
-        $type,
         $isPassenger,
         implode(' · ', $notesParts),
     ]);
