@@ -625,9 +625,10 @@ classDiagram
 
 ## 6. Modèle de données (vue entités-relations)
 
-32 tables, 8 vues de compatibilité. Les vues (`document_paiement`, `carnet`, `personne`,
-`beneficiaire`, `credits_products`, `audit_log`, `alerte_config`, `alerte_log`) permettent aux
-requêtes héritées de continuer à fonctionner sans modification.
+30 tables, 9 vues de compatibilité. Les vues (`document_paiement`, `carnet`, `personne`,
+`beneficiaire`, `suppliers`, `credits_products`, `audit_log`, `alerte_config`, `alerte_log`)
+permettent aux requêtes héritées de continuer à fonctionner sans modification. Les
+tiers (clients, fournisseurs, personnes) vivent dans la seule table `CLIENTS`.
 
 ```mermaid
 erDiagram
@@ -639,7 +640,7 @@ erDiagram
     BRANDS ||--o{ PRODUCTS : "marque"
     CATEGORIES ||--o{ PRODUCTS : "classe"
     UNITS ||--o{ PRODUCTS : "mesure"
-    SUPPLIERS ||--o{ STOCK_DOCUMENTS : "fournit"
+    CLIENTS ||--o{ STOCK_DOCUMENTS : "fournit"
 
     PRODUCTS ||--o{ STOCK_LEVELS : "positionne"
     PRODUCTS ||--o{ STOCK_DOCUMENT_LINES : "ligne"
@@ -663,7 +664,7 @@ erDiagram
     CREDITS ||--o{ PAYMENT_ALLOCATIONS : "regle"
     PAYMENTS ||--o{ PAYMENT_ALLOCATIONS : "alloue"
 
-    CHEQUES_PERSONNES ||--o{ CHEQUES_CARNETS : "detient"
+    CLIENTS ||--o{ CHEQUES_CARNETS : "detient"
     CHEQUES_CARNETS ||--o{ CHEQUES_DOCUMENTS : "alimente"
 
     USERS ||--o{ AUDIT_LOGS : "trace"
@@ -674,10 +675,10 @@ erDiagram
 
 | Domaine | Tables |
 |---|---|
-| Socle partagé | `roles`, `locations`, `users`, `clients`, `brands`, `categories`, `units`, `suppliers`, `products`, `import_map` |
+| Socle partagé | `roles`, `locations`, `users`, `clients` (tiers uniques : clients / fournisseurs / personnes), `brands`, `categories`, `units`, `products`, `import_map` |
 | Stock | `stock_documents`, `stock_document_lines`, `stock_movements`, `stock_levels`, `inventory_sessions`, `inventory_lines`, `document_sequences` |
 | Crédits & Ventes | `sales`, `sale_items`, `credits`, `payments`, `payment_allocations`, `credit_bons` |
-| Chèques & Effets | `cheques_personnes`, `cheques_carnets`, `cheques_documents`, `cheques_alert_config`, `cheques_alert_log` |
+| Chèques & Effets | `cheques_carnets`, `cheques_documents`, `cheques_alert_config`, `cheques_alert_log` |
 | Paramètres / audit | `settings`, `parametres_societe` (import seul), `audit_logs`, `login_attempts` |
 
 **Règle d'or :** `stock_levels` est la **source de vérité** du stock ; `stock_movements` est le

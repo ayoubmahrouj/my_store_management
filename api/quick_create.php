@@ -130,12 +130,12 @@ try {
         case 'supplier':
             $name = $str('name', 160);
             qc_required(['Nom du fournisseur' => $name]);
-            $exists = core_scalar('SELECT id FROM suppliers WHERE name = ?', [$name]);
+            $exists = core_scalar("SELECT id FROM clients WHERE type = 'FOURNISSEUR' AND name = ?", [$name]);
             if ($exists !== false) {
                 sh_json(['ok' => true, 'item' => ['id' => (int) $exists, 'label' => $name]]);
             }
             core_q(
-                'INSERT INTO suppliers (name, ice, phone, email, address) VALUES (?, ?, ?, ?, ?)',
+                "INSERT INTO clients (name, type, ice, phone, email, address) VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?)",
                 [$name, $str('ice', 30), $str('phone', 30), $str('email', 160), $str('address', 255)]
             );
             $id = core_insert_id();
@@ -160,24 +160,24 @@ try {
             break;
 
         case 'client':
-            $name = $str('name', 150);
-            $type = strtoupper($str('type', 20)) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE';
+            $name = $str('name', 160);
+            $nature = strtoupper($str('type', 20)) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE';
             qc_required(['Nom / raison sociale' => $name]);
             core_q(
-                'INSERT INTO clients (name, phone, email, address, ice, type, credit_limit, is_active)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
-                [$name, $str('phone', 30), $str('email', 160), $str('address', 255), $str('ice', 30), $type, $num('credit_limit')]
+                "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active)
+                 VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, ?, 1)",
+                [$name, $nature, $str('phone', 30), $str('email', 160), $str('address', 255), $str('ice', 30), $num('credit_limit')]
             );
             $id = core_insert_id();
             $label = $name;
             break;
 
         case 'societe':
-            $name = $str('name', 150);
+            $name = $str('name', 160);
             qc_required(['Nom / raison sociale' => $name]);
             core_q(
-                "INSERT INTO clients (name, phone, email, address, ice, type, credit_limit, is_active)
-                 VALUES (?, ?, ?, ?, ?, 'SOCIETE', ?, 1)",
+                "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active)
+                 VALUES (?, 'CLIENT', 'SOCIETE', ?, ?, ?, ?, ?, 1)",
                 [$name, $str('phone', 30), $str('email', 160), $str('address', 255), $str('ice', 30), $num('credit_limit')]
             );
             $id = core_insert_id();
@@ -221,7 +221,7 @@ try {
             break;
 
         case 'personne':
-            $nom = $str('nom', 150);
+            $nom = $str('nom', 160);
             qc_required(['Nom complet' => $nom]);
             $roles = ['EMPLOYE', 'GERANT', 'PROPRIETAIRE_SOCIETE'];
             $role = strtoupper($str('role', 30));
@@ -229,8 +229,8 @@ try {
                 $role = 'EMPLOYE';
             }
             core_q(
-                'INSERT INTO cheques_personnes (nom, role, telephone, email, adresse) VALUES (?, ?, ?, ?, ?)',
-                [$nom, $role, $str('telephone', 30), $str('email', 150), $str('adresse', 255)]
+                "INSERT INTO clients (name, type, role, phone, email, address) VALUES (?, 'PERSONNE', ?, ?, ?, ?)",
+                [$nom, $role, $str('telephone', 30), $str('email', 160), $str('address', 255)]
             );
             $id = core_insert_id();
             $label = $nom;

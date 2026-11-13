@@ -235,7 +235,7 @@ function ensure_supplier(PDO $pdo, array $row): int
     if ($id !== false) {
         return (int) $id;
     }
-    $pdo->prepare('INSERT INTO suppliers (name, ice, phone, email, address, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    $pdo->prepare("INSERT INTO clients (name, type, ice, phone, email, address, is_active, created_at) VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?, ?, ?)")
         ->execute([
             $name, $row['ice'] ?? null, $row['phone'] ?? null, $row['email'] ?? null,
             $row['address'] ?? null, (int) ($row['active'] ?? 1) ? 1 : 0, ts($row['created_at'] ?? null),
@@ -258,10 +258,10 @@ function find_client(PDO $pdo, string $name): ?int
 function insert_client(PDO $pdo, array $c): int
 {
     $pdo->prepare(
-        'INSERT INTO clients (name, phone, email, address, ice, type, credit_limit, is_active, is_passenger, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at, updated_at)
+         VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )->execute([
-        $c['name'], $c['phone'], $c['email'], $c['address'], $c['ice'], $c['type'],
+        $c['name'], $c['type'], $c['phone'], $c['email'], $c['address'], $c['ice'],
         $c['credit_limit'], $c['is_active'], $c['is_passenger'], $c['notes'],
         $c['created_at'], $c['updated_at'],
     ]);
@@ -497,11 +497,11 @@ try {
     if (db_ok($pdo, $chequesDb)) {
         foreach (rows($pdo, $chequesDb, 'personne') as $row) {
             $nom = trim((string) $row['nom']);
-            $stmt = $pdo->prepare('SELECT id FROM cheques_personnes WHERE LOWER(TRIM(nom)) = ? LIMIT 1');
+            $stmt = $pdo->prepare("SELECT id FROM clients WHERE type = 'PERSONNE' AND LOWER(TRIM(name)) = ? LIMIT 1");
             $stmt->execute([norm($nom)]);
             $id = $stmt->fetchColumn();
             if ($id === false) {
-                $pdo->prepare('INSERT INTO cheques_personnes (nom, role, telephone, email, adresse, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                $pdo->prepare("INSERT INTO clients (name, type, role, phone, email, address, created_at, updated_at) VALUES (?, 'PERSONNE', ?, ?, ?, ?, ?, ?)")
                     ->execute([
                         $nom, (string) ($row['role'] ?? 'EMPLOYE'), $row['telephone'] ?? null,
                         $row['email'] ?? null, $row['adresse'] ?? null, ts($row['created_at'] ?? null), null,

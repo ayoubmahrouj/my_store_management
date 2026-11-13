@@ -56,21 +56,22 @@ $data = [
 ];
 
 if ($id > 0) {
-    $exists = fetch_one('SELECT id FROM beneficiaire WHERE id = ?', [$id]);
+    $exists = fetch_one("SELECT id FROM clients WHERE id = ? AND type = 'CLIENT'", [$id]);
     if (!$exists) {
         flash('error', t('Bénéficiaire introuvable.'));
         redirect('beneficiaires/index.php');
     }
     q(
-        'UPDATE beneficiaire SET nom = ?, type = ?, ice = ?, telephone = ?, email = ?, adresse = ? WHERE id = ?',
+        "UPDATE clients SET name = ?, nature = ?, ice = ?, phone = ?, email = ?, address = ?
+         WHERE id = ? AND type = 'CLIENT'",
         array_merge($data, [$id])
     );
     audit('MODIFICATION', 'BENEFICIAIRE', $id, $nom);
     flash('success', t('Bénéficiaire modifié.'));
 } else {
     q(
-        'INSERT INTO beneficiaire (nom, type, ice, telephone, email, adresse, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())',
+        "INSERT INTO clients (name, type, nature, ice, phone, email, address, created_at)
+         VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, NOW())",
         $data
     );
     $id = last_insert_id();

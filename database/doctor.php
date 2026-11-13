@@ -57,7 +57,7 @@ try {
     $admins = (int) core_scalar("SELECT COUNT(*) FROM users u JOIN roles r ON r.id = u.role_id WHERE r.code = 'admin' AND u.active = 1");
     $line('Compte administrateur actif', $admins > 0, $admins . ' compte(s)');
 
-    $requiredViews = ['credits_products', 'document_paiement', 'carnet', 'personne', 'beneficiaire', 'alerte_config', 'alerte_log', 'audit_log'];
+    $requiredViews = ['credits_products', 'document_paiement', 'carnet', 'personne', 'beneficiaire', 'suppliers', 'alerte_config', 'alerte_log', 'audit_log'];
     foreach ($requiredViews as $view) {
         $exists = (int) core_scalar(
             'SELECT COUNT(*) FROM information_schema.views WHERE table_schema = ? AND table_name = ?',

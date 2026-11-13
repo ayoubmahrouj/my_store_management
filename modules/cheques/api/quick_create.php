@@ -35,8 +35,9 @@ try {
             json_response(['ok' => false, 'error' => t('Adresse e-mail invalide.')], 422);
         }
         q(
-            'INSERT INTO personne (nom, role, telephone, email, adresse, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [mb_substr($nom, 0, 150), $role, clean(param('telephone'), 30), $email, clean(param('adresse'), 255)]
+            "INSERT INTO clients (name, type, role, phone, email, address, created_at)
+             VALUES (?, 'PERSONNE', ?, ?, ?, ?, NOW())",
+            [mb_substr($nom, 0, 160), $role, clean(param('telephone'), 30), $email, clean(param('adresse'), 255)]
         );
         $id = last_insert_id();
         audit('CREATION', 'PERSONNE', $id, $nom);
@@ -62,10 +63,10 @@ try {
             json_response(['ok' => false, 'error' => t('Adresse e-mail invalide.')], 422);
         }
         q(
-            'INSERT INTO beneficiaire (nom, type, ice, telephone, email, adresse, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            "INSERT INTO clients (name, type, nature, ice, phone, email, address, created_at)
+             VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, NOW())",
             [
-                mb_substr($nom, 0, 150),
+                mb_substr($nom, 0, 160),
                 $btype,
                 clean(param('ice'), 20),
                 clean(param('telephone'), 30),

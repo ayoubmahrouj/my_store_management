@@ -117,8 +117,9 @@ unique** par concept, partagée par Stock, Crédits et Chèques.
 
 | Entité | Table unique |
 |---|---|
-| Clients / bénéficiaires | `clients` |
-| Fournisseurs | `suppliers` |
+| Tiers : clients / bénéficiaires | `clients` (`type` = `CLIENT`) |
+| Tiers : fournisseurs | `clients` (`type` = `FOURNISSEUR`) |
+| Tiers : personnes internes | `clients` (`type` = `PERSONNE`) |
 | Produits | `products` |
 | Marques | `brands` |
 | Catégories | `categories` |
@@ -129,12 +130,16 @@ unique** par concept, partagée par Stock, Crédits et Chèques.
 | Crédits / bons société | `credits` / `credit_bons` |
 | Stock | `stock_documents`, `stock_document_lines`, `stock_levels` |
 
-Les anciens noms utilisés par le code historique sont des **vues de
-compatibilité** (aucune donnée dupliquée) : `beneficiaire` → `clients`
-(modifiable), `credits_products` → `products`+`brands`, `personne` →
-`cheques_personnes`, `carnet` → `cheques_carnets`, `document_paiement` →
-`cheques_documents`, `alerte_config`/`alerte_log` → `cheques_alert_*`,
-`audit_log` → `audit_logs`.
+**Une seule table de tiers** : `clients` regroupe clients, fournisseurs et
+personnes internes (colonne `type` = `CLIENT` / `FOURNISSEUR` / `PERSONNE`,
+`nature` = `PERSONNE` / `SOCIETE`, `role` pour les personnes internes). Les
+anciens noms utilisés par le code historique sont des **vues de compatibilité**
+(aucune donnée dupliquée) : `beneficiaire` → `clients` (type `CLIENT`),
+`suppliers` → `clients` (type `FOURNISSEUR`), `personne` → `clients` (type
+`PERSONNE`), `credits_products` → `products`+`brands`, `carnet` →
+`cheques_carnets`, `document_paiement` → `cheques_documents`,
+`alerte_config`/`alerte_log` → `cheques_alert_*`, `audit_log` → `audit_logs`.
+Les écritures ciblent directement `clients` en fixant `type`.
 
 **Informations société** : source unique = table `settings`
 (clés `company_name`, `company_address`, `company_phone`, `company_email`),
@@ -166,13 +171,14 @@ gestion_unifiee/
 ## 6. Base de données
 
 - Nom par défaut : `gestion_our_stock`
-- Tables partagées : `users`, `roles`, `clients`, `products`, `brands`,
-  `categories`, `units`, `suppliers`, `locations`, `settings`, `audit_logs`…
+- Tables partagées : `users`, `roles`, `clients` (tiers uniques : clients,
+  fournisseurs, personnes), `products`, `brands`, `categories`, `units`,
+  `locations`, `settings`, `audit_logs`…
 - Tables spécifiques préfixées : `stock_*`, `sales` / `credits` / `payments`,
   `cheques_*`.
 - Vues de compatibilité (`credits_products`, `carnet`, `personne`,
-  `beneficiaire`, `document_paiement`…) pour que le code historique continue de
-  fonctionner sans réécriture lourde.
+  `beneficiaire`, `suppliers`, `document_paiement`…) pour que le code historique
+  continue de fonctionner sans réécriture lourde.
 
 La migration ne modifie **jamais** les anciennes bases : elle ne fait que lire
 `suivi_stock`, `gestion_credits_php` (ou `gestion_credits`) et `gestion_cheques`.

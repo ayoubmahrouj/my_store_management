@@ -1,8 +1,8 @@
 -- =========================================================================
 -- Gestion Our Stock — schéma unique
 -- Base : gestion_our_stock
--- Tables partagées : roles, locations, users, clients, brands, categories,
---                    units, suppliers, products, settings, audit_logs…
+-- Tables partagées : roles, locations, users, clients (tiers uniques),
+--                    brands, categories, units, products, settings, audit_logs…
 -- Modules : stock_* / inventory_* · sales, credits… · cheques_*
 -- =========================================================================
 
@@ -71,15 +71,22 @@ CREATE TABLE IF NOT EXISTS `import_map` (
   KEY `import_map_target_index` (`target_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Clients partagés (crédits + chèques/bénéficiaires)
+-- Tiers uniques : clients, fournisseurs et personnes dans UNE SEULE table.
+--   `type`   = nature du tiers  : CLIENT | FOURNISSEUR | PERSONNE
+--   `nature` = forme juridique  : PERSONNE | SOCIETE
+--   `role`   = rôle interne, renseigné uniquement pour type = PERSONNE
+-- Les vues de compatibilité `beneficiaire`, `suppliers` et `personne`
+-- exposent cette table sous les noms historiques (lecture seule côté noms).
 CREATE TABLE IF NOT EXISTS `clients` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(150) NOT NULL,
+  `name` VARCHAR(160) NOT NULL,
+  `type` ENUM('CLIENT','FOURNISSEUR','PERSONNE') NOT NULL DEFAULT 'CLIENT',
+  `nature` ENUM('PERSONNE','SOCIETE') NOT NULL DEFAULT 'PERSONNE',
+  `role` ENUM('EMPLOYE','GERANT','PROPRIETAIRE_SOCIETE') DEFAULT NULL,
   `phone` VARCHAR(30) DEFAULT NULL,
   `email` VARCHAR(160) DEFAULT NULL,
   `address` VARCHAR(255) DEFAULT NULL,
   `ice` VARCHAR(30) DEFAULT NULL,
-  `type` ENUM('PERSONNE','SOCIETE') NOT NULL DEFAULT 'PERSONNE',
   `credit_limit` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `is_passenger` TINYINT(1) NOT NULL DEFAULT 0,
@@ -88,7 +95,8 @@ CREATE TABLE IF NOT EXISTS `clients` (
   `updated_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `clients_name_index` (`name`),
-  KEY `clients_phone_index` (`phone`)
+  KEY `clients_phone_index` (`phone`),
+  KEY `clients_type_index` (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `brands` (
@@ -116,19 +124,6 @@ CREATE TABLE IF NOT EXISTS `units` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `units_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `suppliers` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(160) NOT NULL,
-  `ice` VARCHAR(30) DEFAULT NULL,
-  `phone` VARCHAR(30) DEFAULT NULL,
-  `email` VARCHAR(160) DEFAULT NULL,
-  `address` VARCHAR(255) DEFAULT NULL,
-  `active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `suppliers_name_unique` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `products` (
@@ -170,7 +165,7 @@ CREATE TABLE IF NOT EXISTS `stock_documents` (
   `status` ENUM('brouillon','valide','expedie','recu','annule') NOT NULL DEFAULT 'brouillon',
   `location_id` INT UNSIGNED NOT NULL,
   `dest_location_id` INT UNSIGNED DEFAULT NULL,
-  `supplier_id` INT UNSIGNED DEFAULT NULL,
+  `supplier_id` BIGINT UNSIGNED DEFAULT NULL,
   `reference` VARCHAR(100) DEFAULT NULL,
   `notes` TEXT DEFAULT NULL,
   `total_cost` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
@@ -190,7 +185,7 @@ CREATE TABLE IF NOT EXISTS `stock_documents` (
   KEY `idx_documents_type_status` (`type`, `status`, `doc_date`),
   CONSTRAINT `fk_documents_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`),
   CONSTRAINT `fk_documents_dest` FOREIGN KEY (`dest_location_id`) REFERENCES `locations` (`id`),
-  CONSTRAINT `fk_documents_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
+  CONSTRAINT `fk_documents_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `clients` (`id`),
   CONSTRAINT `fk_documents_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -385,20 +380,6 @@ CREATE TABLE IF NOT EXISTS `credit_bons` (
 -- Module Chèques & Effets
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `cheques_personnes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nom` VARCHAR(150) NOT NULL,
-  `role` ENUM('EMPLOYE','GERANT','PROPRIETAIRE_SOCIETE') NOT NULL DEFAULT 'EMPLOYE',
-  `telephone` VARCHAR(30) DEFAULT NULL,
-  `email` VARCHAR(150) DEFAULT NULL,
-  `adresse` VARCHAR(255) DEFAULT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `cheques_personnes_nom_index` (`nom`),
-  KEY `cheques_personnes_role_index` (`role`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS `cheques_carnets` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `banque` VARCHAR(100) DEFAULT NULL,
@@ -411,7 +392,7 @@ CREATE TABLE IF NOT EXISTS `cheques_carnets` (
   PRIMARY KEY (`id`),
   KEY `cheques_carnets_libelle_index` (`libelle`),
   KEY `cheques_carnets_type_index` (`type`),
-  CONSTRAINT `fk_cheques_carnet_personne` FOREIGN KEY (`personne_id`) REFERENCES `cheques_personnes` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_cheques_carnet_personne` FOREIGN KEY (`personne_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `cheques_documents` (
@@ -443,7 +424,7 @@ CREATE TABLE IF NOT EXISTS `cheques_documents` (
   KEY `idx_cheques_personne` (`personne_id`),
   KEY `idx_cheques_regle` (`regle`),
   CONSTRAINT `fk_cheques_beneficiaire` FOREIGN KEY (`beneficiaire_id`) REFERENCES `clients` (`id`),
-  CONSTRAINT `fk_cheques_personne` FOREIGN KEY (`personne_id`) REFERENCES `cheques_personnes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cheques_personne` FOREIGN KEY (`personne_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_cheques_carnet` FOREIGN KEY (`carnet_id`) REFERENCES `cheques_carnets` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -566,14 +547,18 @@ LEFT JOIN `brands` b ON b.`id` = p.`brand_id`;
 
 -- Le module Chèques historique utilise encore les noms de tables d'origine.
 -- Ces vues restent modifiables (SELECT simple sur une seule table) afin que
--- les INSERT / UPDATE / DELETE continuent de fonctionner sans réécriture.
+-- les UPDATE / DELETE continuent de fonctionner sans réécriture.
 CREATE OR REPLACE VIEW `document_paiement` AS SELECT * FROM `cheques_documents`;
 CREATE OR REPLACE VIEW `carnet`            AS SELECT * FROM `cheques_carnets`;
-CREATE OR REPLACE VIEW `personne`          AS SELECT * FROM `cheques_personnes`;
 CREATE OR REPLACE VIEW `alerte_config`     AS SELECT * FROM `cheques_alert_config`;
 CREATE OR REPLACE VIEW `alerte_log`        AS SELECT * FROM `cheques_alert_log`;
 
--- Les bénéficiaires sont désormais les clients partagés (crédits + chèques).
+-- Tiers uniques exposés sous leurs noms historiques :
+--   beneficiaire = clients (type CLIENT)      · type = forme juridique (nature)
+--   suppliers    = clients (type FOURNISSEUR)
+--   personne     = clients (type PERSONNE, rôle interne)
+-- Les écritures ciblent directement `clients` en fixant `type` (les vues ne
+-- portent pas la colonne `type`, un INSERT via vue retomberait sur le défaut).
 CREATE OR REPLACE VIEW `beneficiaire` AS
 SELECT `id`,
        `name`      AS `nom`,
@@ -581,11 +566,36 @@ SELECT `id`,
        `address`   AS `adresse`,
        `email`,
        `ice`,
-       `type`,
+       `nature`    AS `type`,
        `created_at`,
        `updated_at`,
        `is_active`
-FROM `clients`;
+FROM `clients`
+WHERE `type` = 'CLIENT';
+
+CREATE OR REPLACE VIEW `suppliers` AS
+SELECT `id`,
+       `name`,
+       `ice`,
+       `phone`,
+       `email`,
+       `address`,
+       `is_active` AS `active`,
+       `created_at`
+FROM `clients`
+WHERE `type` = 'FOURNISSEUR';
+
+CREATE OR REPLACE VIEW `personne` AS
+SELECT `id`,
+       `name`    AS `nom`,
+       `role`,
+       `phone`   AS `telephone`,
+       `email`,
+       `address` AS `adresse`,
+       `created_at`,
+       `updated_at`
+FROM `clients`
+WHERE `type` = 'PERSONNE';
 
 -- Journal d'audit historique en lecture seule, alimenté par `audit_logs`.
 CREATE OR REPLACE VIEW `audit_log` AS

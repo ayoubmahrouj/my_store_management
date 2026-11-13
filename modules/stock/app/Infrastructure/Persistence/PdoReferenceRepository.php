@@ -131,8 +131,8 @@ final class PdoReferenceRepository
                     break;
                 case 'supplier':
                     $stmt = $this->pdo->prepare(
-                        'INSERT INTO suppliers (name, ice, phone, email, address)
-                         VALUES (:name, :ice, :phone, :email, :address)'
+                        "INSERT INTO clients (name, type, ice, phone, email, address)
+                         VALUES (:name, 'FOURNISSEUR', :ice, :phone, :email, :address)"
                     );
                     $stmt->execute([
                         'name'    => $this->required($data, 'name'),
@@ -174,10 +174,22 @@ final class PdoReferenceRepository
 
     public function toggle(string $type, int $id): void
     {
-        $table = match (strtolower($type)) {
+        $type = strtolower($type);
+
+        if ($type === 'supplier') {
+            $stmt = $this->pdo->prepare(
+                "UPDATE clients SET is_active = 1 - is_active WHERE id = :id AND type = 'FOURNISSEUR'"
+            );
+            $stmt->execute(['id' => $id]);
+            if ($stmt->rowCount() === 0) {
+                throw new RuntimeException('Élément introuvable.');
+            }
+            return;
+        }
+
+        $table = match ($type) {
             'brand' => 'brands',
             'category' => 'categories',
-            'supplier' => 'suppliers',
             'location' => 'locations',
             default => throw new RuntimeException('Ce référentiel ne peut pas être désactivé.'),
         };

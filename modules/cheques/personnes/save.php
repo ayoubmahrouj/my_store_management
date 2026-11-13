@@ -51,20 +51,21 @@ $data = [
 ];
 
 if ($id > 0) {
-    if (!fetch_one('SELECT id FROM personne WHERE id = ?', [$id])) {
+    if (!fetch_one("SELECT id FROM clients WHERE id = ? AND type = 'PERSONNE'", [$id])) {
         flash('error', t('Personne introuvable.'));
         redirect('personnes/index.php');
     }
     q(
-        'UPDATE personne SET nom = ?, role = ?, telephone = ?, email = ?, adresse = ? WHERE id = ?',
+        "UPDATE clients SET name = ?, role = ?, phone = ?, email = ?, address = ?
+         WHERE id = ? AND type = 'PERSONNE'",
         array_merge($data, [$id])
     );
     audit('MODIFICATION', 'PERSONNE', $id, $nom);
     flash('success', t('Personne modifiée.'));
 } else {
     q(
-        'INSERT INTO personne (nom, role, telephone, email, adresse, created_at)
-         VALUES (?, ?, ?, ?, ?, NOW())',
+        "INSERT INTO clients (name, type, role, phone, email, address, created_at)
+         VALUES (?, 'PERSONNE', ?, ?, ?, ?, NOW())",
         $data
     );
     $id = last_insert_id();

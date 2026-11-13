@@ -331,8 +331,8 @@ out(sprintf('Catégories : %d · Marques : %d · Unités : %d', count($categoryM
 $clientFindPhone = $pdo->prepare('SELECT id FROM clients WHERE name = ? AND phone = ? LIMIT 1');
 $clientFindName = $pdo->prepare('SELECT id FROM clients WHERE name = ? LIMIT 1');
 $clientInsert = $pdo->prepare(
-    'INSERT INTO clients (name, phone, email, address, ice, type, credit_limit, is_active, is_passenger, notes, created_at)
-     VALUES (?, ?, NULL, ?, ?, ?, 0, 1, ?, ?, NOW())'
+    "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at)
+     VALUES (?, 'CLIENT', ?, ?, NULL, ?, ?, 0, 1, ?, ?, NOW())"
 );
 
 $pdo->beginTransaction();
@@ -400,10 +400,10 @@ out(sprintf('Clients : %d créés · %d déjà présents', $counts['clients'], $
 | Fournisseurs
 |-------------------------------------------------------------------------*/
 
+$supplierFind = $pdo->prepare("SELECT id FROM clients WHERE type = 'FOURNISSEUR' AND name = ? LIMIT 1");
 $supplierInsert = $pdo->prepare(
-    'INSERT INTO suppliers (name, ice, phone, email, address, active, created_at)
-     VALUES (?, ?, ?, ?, ?, 1, NOW())
-     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)'
+    "INSERT INTO clients (name, type, ice, phone, email, address, is_active, created_at)
+     VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?, 1, NOW())"
 );
 
 $pdo->beginTransaction();
@@ -415,6 +415,12 @@ foreach (source_rows($pdo, $sourceDb, 'fournisseur') as $row) {
     $name = clean_text($row['NOM'], 160);
     if ($name === '') {
         $name = 'Fournisseur #' . $legacyId;
+    }
+    $supplierFind->execute([$name]);
+    $existing = $supplierFind->fetchColumn();
+    if ($existing !== false) {
+        map_set($pdo, $sourceDb, 'supplier', $legacyId, (int) $existing);
+        continue;
     }
     $supplierInsert->execute([
         $name,

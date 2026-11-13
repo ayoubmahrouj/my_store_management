@@ -23,7 +23,7 @@ if ($nb > 0) {
 }
 
 try {
-    q('DELETE FROM beneficiaire WHERE id = ?', [$id]);
+    q("DELETE FROM clients WHERE id = ? AND type = 'CLIENT'", [$id]);
     audit('SUPPRESSION', 'BENEFICIAIRE', $id, (string) $item['nom']);
     flash('success', t('Bénéficiaire supprimé.'));
 } catch (PDOException $e) {
