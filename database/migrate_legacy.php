@@ -511,22 +511,24 @@ if ($stockDb !== null) {
 if ($creditsDb !== null && src_exists($server, $creditsDb, 'products')) {
     foreach (src_rows($server, $creditsDb, 'products') as $row) {
         $brandName = trim((string) ($row['brand'] ?? ''));
-        $brandId = $brandName !== '' ? ensure_brand($pdo, $brandName) : $defaultBrandId;
+        $brandId = $brandName !== ''
+            ? ensure_brand($pdo, $brandName)
+            : ($brandMap['credits:' . (int) ($row['brand_id'] ?? 0)] ?? $defaultBrandId);
         $insertProduct->execute([
-            null,
-            null,
-            (string) ($row['name'] ?? 'Article'),
+            $row['sku'] ?? null,
+            $row['barcode'] ?? null,
+            (string) pick($row, ['name_fr', 'name', 'name_ar', 'designation'], 'Article'),
             $row['description'] ?? null,
             $brandId,
             $defaultCategoryId,
             $defaultUnitId,
-            0,
-            (float) ($row['price'] ?? 0),
+            (float) pick($row, ['purchase_price', 'purchase_cost'], 0),
+            (float) pick($row, ['sale_price', 'price'], 0),
             null,
-            0,
+            (float) pick($row, ['stock_min', 'min_stock'], 0),
             is_true($row['is_active'] ?? 1) ? 1 : 0,
             $row['created_at'] ?? date('Y-m-d H:i:s'),
-            null,
+            $row['updated_at'] ?? null,
         ]);
         $productMap['credits:' . (int) $row['id']] = (int) $pdo->lastInsertId();
     }
@@ -658,25 +660,40 @@ if ($creditsDb !== null) {
             $clientId,
             isset($row['user_id']) ? ($userMap['credits:' . (int) $row['user_id']] ?? $adminId) : $adminId,
             $row['date'], (float) ($row['subtotal'] ?? 0), (float) ($row['discount'] ?? 0),
-            (float) ($row['total'] ?? 0), (float) ($row['paid'] ?? 0),
-            $row['payment_method'] ?? 'cash', $row['status'] ?? 'paid', $row['note'] ?? null,
+            (float) ($row['total'] ?? 0), (float) pick($row, ['paid', 'paid_amount'], 0),
+            $row['payment_method'] ?? 'cash', $row['status'] ?? 'paid', pick($row, ['note', 'notes'], null),
             $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $saleMap[(int) $row['id']] = (int) $pdo->lastInsertId();
+    }
+
+    // Aide à la reconstruction des lignes de vente (schéma Laravel : quantity,
+    // name_fr/brand_id au lieu de qty/product_name/brand).
+    $creditBrands = [];
+    foreach (src_rows($server, $creditsDb, 'brands') as $b) {
+        $creditBrands[(int) $b['id']] = (string) $b['name'];
+    }
+    $creditProductInfo = [];
+    foreach (src_rows($server, $creditsDb, 'products') as $p) {
+        $creditProductInfo[(int) $p['id']] = [
+            'name'  => (string) pick($p, ['name_fr', 'name', 'designation'], 'Article'),
+            'brand' => $creditBrands[(int) ($p['brand_id'] ?? 0)] ?? (string) ($p['brand'] ?? ''),
+        ];
     }
 
     foreach (src_rows($server, $creditsDb, 'sale_items') as $row) {
         if (!isset($saleMap[(int) $row['sale_id']])) {
             continue;
         }
+        $info = $creditProductInfo[(int) ($row['product_id'] ?? 0)] ?? ['name' => 'Article', 'brand' => ''];
         $pdo->prepare(
             'INSERT INTO sale_items (sale_id, product_id, brand, product_name, qty, unit_price, total)
              VALUES (?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $saleMap[(int) $row['sale_id']],
             isset($row['product_id']) ? ($productMap['credits:' . (int) $row['product_id']] ?? null) : null,
-            $row['brand'] ?? '', $row['product_name'] ?? 'Article',
-            (float) ($row['qty'] ?? 1), (float) ($row['unit_price'] ?? 0), (float) ($row['total'] ?? 0),
+            $row['brand'] ?? $info['brand'], $row['product_name'] ?? $info['name'],
+            (float) pick($row, ['qty', 'quantity'], 1), (float) ($row['unit_price'] ?? 0), (float) ($row['total'] ?? 0),
         ]);
     }
 
@@ -685,13 +702,16 @@ if ($creditsDb !== null) {
         if (!isset($saleMap[(int) $row['sale_id']], $clientMap['credits:' . (int) $row['client_id']])) {
             continue;
         }
+        $creditAmount = (float) pick($row, ['amount', 'principal', 'total_due'], 0);
+        $creditPaid   = (float) pick($row, ['paid', 'amount_paid'], 0);
+        $creditRemain = (float) pick($row, ['remaining', 'balance'], $creditAmount - $creditPaid);
         $pdo->prepare(
             'INSERT INTO credits (sale_id, client_id, amount, paid, remaining, due_date, status, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $saleMap[(int) $row['sale_id']],
             $clientMap['credits:' . (int) $row['client_id']],
-            (float) $row['amount'], (float) ($row['paid'] ?? 0), (float) $row['remaining'],
+            $creditAmount, $creditPaid, $creditRemain,
             $row['due_date'] ?? null, $row['status'] ?? 'open', $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $creditMap[(int) $row['id']] = (int) $pdo->lastInsertId();
@@ -705,19 +725,28 @@ if ($creditsDb !== null) {
         )->execute([
             isset($row['client_id']) ? ($clientMap['credits:' . (int) $row['client_id']] ?? null) : null,
             isset($row['user_id']) ? ($userMap['credits:' . (int) $row['user_id']] ?? $adminId) : $adminId,
-            $row['date'], (float) $row['amount'], $row['method'] ?? 'cash', $row['note'] ?? null,
+            pick($row, ['date', 'paid_at'], date('Y-m-d')),
+            (float) ($row['amount'] ?? 0), $row['method'] ?? 'cash', pick($row, ['note', 'notes'], null),
             $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $paymentMap[(int) $row['id']] = (int) $pdo->lastInsertId();
     }
 
     if (src_exists($server, $creditsDb, 'payment_allocations')) {
+        // Le schéma Laravel pointe sur installment_id ; on remonte au crédit.
+        $installmentCredit = [];
+        foreach (src_rows($server, $creditsDb, 'installments') as $ins) {
+            $installmentCredit[(int) $ins['id']] = (int) ($ins['credit_id'] ?? 0);
+        }
         foreach (src_rows($server, $creditsDb, 'payment_allocations') as $row) {
-            if (!isset($paymentMap[(int) $row['payment_id']], $creditMap[(int) $row['credit_id']])) {
+            $legacyCreditId = isset($row['credit_id'])
+                ? (int) $row['credit_id']
+                : ($installmentCredit[(int) ($row['installment_id'] ?? 0)] ?? 0);
+            if (!isset($paymentMap[(int) $row['payment_id']], $creditMap[$legacyCreditId])) {
                 continue;
             }
             $pdo->prepare('INSERT INTO payment_allocations (payment_id, credit_id, amount) VALUES (?, ?, ?)')
-                ->execute([$paymentMap[(int) $row['payment_id']], $creditMap[(int) $row['credit_id']], (float) $row['amount']]);
+                ->execute([$paymentMap[(int) $row['payment_id']], $creditMap[$legacyCreditId], (float) $row['amount']]);
         }
     }
 
