@@ -532,3 +532,60 @@ body.gos-no-scroll {
     .gos-image-modal { padding: 12px; }
     .gos-image-body { padding: 10px; }
 }
+
+/* ---------------------------- Sélecteur de langue ---------------------- */
+
+.gos-lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--gos-line);
+    background: var(--gos-panel);
+}
+
+.gos-lang-btn {
+    min-width: 34px;
+    text-align: center;
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: var(--gos-muted) !important;
+    text-decoration: none;
+    transition: .16s ease;
+}
+
+.gos-lang-btn:hover { color: var(--gos-text) !important; background: var(--gos-panel-2); }
+
+.gos-lang-btn.is-active {
+    color: #fff !important;
+    background: linear-gradient(135deg, #5b8cff, #7c5cff);
+    box-shadow: 0 6px 16px rgba(91, 140, 255, .28);
+}
+
+/* ------------------------------ RTL (arabe) --------------------------- */
+
+html[dir="rtl"] body.gos-body {
+    font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html[dir="rtl"] .gos-sidebar { inset: 0 0 0 auto; border-right: 0; border-left: 1px solid var(--gos-line); }
+html[dir="rtl"] .gos-main { margin-left: 0; margin-right: var(--gos-sidebar-w); }
+html[dir="rtl"] .gos-nav-link.is-active::before { left: auto; right: 0; }
+html[dir="rtl"] .gos-topbar-actions { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .gos-user-chip { padding-left: 0; padding-right: 12px; border-left: 0; border-right: 1px solid var(--gos-line); }
+html[dir="rtl"] .gos-table th { text-align: right; }
+html[dir="rtl"] .gos-modal-foot { justify-content: flex-start; }
+
+.gos-auth-lang { margin-left: auto; }
+html[dir="rtl"] .gos-auth-lang { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] body.gos-auth-body { font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, sans-serif; }
+
+@media (max-width: 900px) {
+    html[dir="rtl"] .gos-sidebar { transform: translateX(104%); }
+    html[dir="rtl"] .gos-sidebar.is-open { transform: none; }
+    html[dir="rtl"] .gos-main { margin-right: 0; }
+}

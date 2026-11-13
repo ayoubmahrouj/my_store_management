@@ -99,10 +99,10 @@ function core_require_login(?string $module = null): void
 
     if ($module !== null && !core_can_access($module)) {
         http_response_code(403);
-        echo '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Accès refusé</title>'
+        echo '<!doctype html><html lang="' . sh_e(sh_locale()) . '" dir="' . (sh_is_rtl() ? 'rtl' : 'ltr') . '"><meta charset="utf-8"><title>' . sh_e(sh_t('access_denied')) . '</title>'
             . '<body style="font-family:system-ui;background:#080b10;color:#e6edf6;padding:48px">'
-            . '<h1>403 — Accès refusé</h1><p>Votre compte n\'a pas accès au module « ' . sh_e($module) . ' ».</p>'
-            . '<p><a style="color:#5b8cff" href="' . sh_e(sh_url('/index.php')) . '">Retour au tableau de bord</a></p></body></html>';
+            . '<h1>403 — ' . sh_e(sh_t('access_denied')) . '</h1><p>' . sh_e(sh_t('no_module_access', ['module' => (string) $module])) . '</p>'
+            . '<p><a style="color:#5b8cff" href="' . sh_e(sh_url('/index.php')) . '">' . sh_e(sh_t('back_to_dashboard')) . '</a></p></body></html>';
         exit;
     }
 }

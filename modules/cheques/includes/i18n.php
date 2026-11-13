@@ -13,7 +13,8 @@ function i18n_dictionary(): array
 
 function lang(): string
 {
-    return ($_SESSION['lang'] ?? 'fr') === 'ar' ? 'ar' : 'fr';
+    $lang = $_SESSION['lang'] ?? $_SESSION['locale'] ?? 'fr';
+    return $lang === 'ar' ? 'ar' : 'fr';
 }
 
 function is_rtl(): bool
@@ -54,7 +55,8 @@ function handle_lang_switch(): void
 {
     if (isset($_GET['lang'])) {
         $target = $_GET['lang'] === 'ar' ? 'ar' : 'fr';
-        $_SESSION['lang'] = $target;
+        // Garde le socle, Crédits et Chèques sur la même langue.
+        sh_set_locale($target);
         $params = $_GET;
         unset($params['lang']);
         $path = ltrim(current_path(), '/');

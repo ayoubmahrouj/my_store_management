@@ -31,19 +31,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-sh_auth_layout_start('Connexion');
+sh_auth_layout_start(sh_t('login_title'));
 ?>
 <div class="gos-auth-card">
     <div class="gos-auth-brand">
         <span class="gos-brand-mark">G</span>
         <div>
             <h1><?= sh_e(GOS_APP_NAME) ?></h1>
-            <p>Stock · Crédits & Ventes · Chèques & Effets</p>
+            <p><?= sh_e(sh_t('modules_tagline')) ?></p>
         </div>
+        <div class="gos-auth-lang"><?php sh_lang_switcher(); ?></div>
     </div>
 
     <?php if ($expired): ?>
-        <div class="gos-alert gos-alert-warning">Session expirée. Veuillez vous reconnecter.</div>
+        <div class="gos-alert gos-alert-warning"><?= sh_e(sh_t('session_expired')) ?></div>
     <?php endif; ?>
     <?php if ($error !== null): ?>
         <div class="gos-alert gos-alert-error"><?= sh_e($error) ?></div>
@@ -54,26 +55,26 @@ sh_auth_layout_start('Connexion');
         <input type="hidden" name="next" value="<?= sh_e($next) ?>">
 
         <div class="gos-form-field">
-            <label for="login">Identifiant</label>
-            <input type="text" id="login" name="login" value="<?= sh_e($login) ?>" required autofocus autocomplete="username" placeholder="Votre identifiant">
+            <label for="login"><?= sh_e(sh_t('identifier')) ?></label>
+            <input type="text" id="login" name="login" value="<?= sh_e($login) ?>" required autofocus autocomplete="username" placeholder="<?= sh_e(sh_t('identifier_placeholder')) ?>">
         </div>
 
         <div class="gos-form-field">
-            <label for="password">Mot de passe</label>
+            <label for="password"><?= sh_e(sh_t('password')) ?></label>
             <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
         </div>
 
-        <button type="submit" class="gos-btn gos-btn-primary gos-auth-submit">Se connecter</button>
+        <button type="submit" class="gos-btn gos-btn-primary gos-auth-submit"><?= sh_e(sh_t('sign_in')) ?></button>
     </form>
 
     <div class="gos-auth-links">
-        <a href="<?= sh_e(sh_module_url('stock', '/dashboard')) ?>">Stock</a>
-        <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=dashboard')) ?>">Crédits</a>
-        <a href="<?= sh_e(sh_module_url('cheques', '/index.php')) ?>">Chèques</a>
+        <a href="<?= sh_e(sh_module_url('stock', '/dashboard')) ?>"><?= sh_e(sh_t('stock')) ?></a>
+        <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=dashboard')) ?>"><?= sh_e(sh_t('credits')) ?></a>
+        <a href="<?= sh_e(sh_module_url('cheques', '/index.php')) ?>"><?= sh_e(sh_t('cheques')) ?></a>
     </div>
 
     <div class="gos-auth-meta">
-        <span>Une seule connexion pour les 3 modules</span>
+        <span><?= sh_e(sh_t('single_login')) ?></span>
         <span>v<?= sh_e(GOS_VERSION) ?></span>
     </div>
 </div>

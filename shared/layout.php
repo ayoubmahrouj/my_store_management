@@ -42,10 +42,10 @@ function sh_nav_icon(string $name): string
 function sh_module_label(string $module): string
 {
     return match ($module) {
-        'stock'   => 'Stock',
-        'credits' => 'Crédits & Ventes',
-        'cheques' => 'Chèques & Effets',
-        default   => 'Accueil',
+        'stock'   => sh_t('stock'),
+        'credits' => sh_t('credits'),
+        'cheques' => sh_t('cheques'),
+        default   => sh_t('home'),
     };
 }
 
@@ -91,13 +91,38 @@ function sh_render_nav(array $nav, string $module, string $active): void
     }
 }
 
+/** URL de bascule de langue, en conservant la page courante. */
+function sh_lang_switch_url(string $locale): string
+{
+    $locale = $locale === 'ar' ? 'ar' : 'fr';
+    $next = (string) ($_SERVER['REQUEST_URI'] ?? sh_url('/index.php'));
+    return sh_url('/lang.php') . '?to=' . $locale . '&next=' . rawurlencode($next);
+}
+
+/** Sélecteur FR / AR affiché dans la barre supérieure. */
+function sh_lang_switcher(): void
+{
+    $current = sh_locale();
+    echo '<div class="gos-lang-switch" role="group" aria-label="' . sh_e(sh_t('language')) . '">';
+    foreach (['fr', 'ar'] as $code) {
+        $isActive = $current === $code;
+        echo '<a class="gos-lang-btn' . ($isActive ? ' is-active' : '') . '"'
+            . ' href="' . sh_e(sh_lang_switch_url($code)) . '"'
+            . ' hreflang="' . sh_e($code) . '"'
+            . ' title="' . sh_e(sh_locale_name($code)) . '"'
+            . ($isActive ? ' aria-current="true"' : '') . '>'
+            . sh_e(strtoupper($code)) . '</a>';
+    }
+    echo '</div>';
+}
+
 function sh_module_switcher(string $current): void
 {
     $modules = [
-        ['key' => 'home', 'label' => 'Accueil', 'icon' => 'grid', 'url' => sh_url('/index.php')],
-        ['key' => 'stock', 'label' => 'Stock', 'icon' => 'box', 'url' => sh_module_url('stock', '/dashboard')],
-        ['key' => 'credits', 'label' => 'Crédits', 'icon' => 'cart', 'url' => sh_module_url('credits', '/index.php?p=dashboard')],
-        ['key' => 'cheques', 'label' => 'Chèques', 'icon' => 'wallet', 'url' => sh_module_url('cheques', '/index.php')],
+        ['key' => 'home', 'label' => sh_t('home'), 'icon' => 'grid', 'url' => sh_url('/index.php')],
+        ['key' => 'stock', 'label' => sh_t('stock'), 'icon' => 'box', 'url' => sh_module_url('stock', '/dashboard')],
+        ['key' => 'credits', 'label' => sh_t('credits'), 'icon' => 'cart', 'url' => sh_module_url('credits', '/index.php?p=dashboard')],
+        ['key' => 'cheques', 'label' => sh_t('cheques'), 'icon' => 'wallet', 'url' => sh_module_url('cheques', '/index.php')],
     ];
 
     echo '<div class="gos-switcher" role="navigation" aria-label="Modules">';
@@ -139,7 +164,7 @@ function sh_layout_start(array $opts = []): void
     $theme = in_array($theme, ['dark', 'light'], true) ? $theme : 'dark';
 
     echo '<!doctype html>' . "\n";
-    echo '<html lang="fr" data-theme="' . sh_e($theme) . '">' . "\n<head>\n";
+    echo '<html lang="' . sh_e(sh_locale()) . '" dir="' . (sh_is_rtl() ? 'rtl' : 'ltr') . '" data-theme="' . sh_e($theme) . '">' . "\n<head>\n";
     echo '<meta charset="utf-8">' . "\n";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
     echo '<meta name="theme-color" content="#080b10">' . "\n";
@@ -184,7 +209,7 @@ function sh_layout_start(array $opts = []): void
             . '</div>';
         echo '<form method="post" action="' . sh_e(sh_url('/logout.php')) . '" class="gos-logout-form">'
             . core_csrf_field()
-            . '<button type="submit" class="gos-icon-btn" title="Déconnexion" aria-label="Déconnexion">' . sh_nav_icon('logout') . '</button>'
+            . '<button type="submit" class="gos-icon-btn" title="' . sh_e(sh_t('logout')) . '" aria-label="' . sh_e(sh_t('logout')) . '">' . sh_nav_icon('logout') . '</button>'
             . '</form>';
     }
     echo '</div>';
@@ -193,15 +218,16 @@ function sh_layout_start(array $opts = []): void
     /* ---------------- Main ---------------- */
     echo '<div class="gos-main">';
     echo '<header class="gos-topbar">';
-    echo '<button class="gos-icon-btn gos-menu-btn" type="button" id="gosMenuBtn" aria-label="Menu">'
+    echo '<button class="gos-icon-btn gos-menu-btn" type="button" id="gosMenuBtn" aria-label="' . sh_e(sh_t('menu')) . '">'
         . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
         . '</button>';
-    echo '<div class="gos-page-head"><h1>' . sh_e($title) . '</h1><p>' . sh_e($opts['subtitle'] !== '' ? $opts['subtitle'] : sh_date_long_fr()) . '</p></div>';
+    echo '<div class="gos-page-head"><h1>' . sh_e($title) . '</h1><p>' . sh_e($opts['subtitle'] !== '' ? $opts['subtitle'] : sh_date_long()) . '</p></div>';
     echo '<div class="gos-topbar-actions">';
     if ($module !== 'home') {
         echo '<span class="gos-module-pill">' . sh_nav_icon($module === 'stock' ? 'box' : ($module === 'credits' ? 'cart' : 'wallet')) . sh_e(sh_module_label($module)) . '</span>';
     }
-    echo '<button class="gos-icon-btn" type="button" id="gosThemeBtn" title="Basculer le thème" aria-label="Thème">'
+    sh_lang_switcher();
+    echo '<button class="gos-icon-btn" type="button" id="gosThemeBtn" title="' . sh_e(sh_t('theme')) . '" aria-label="' . sh_e(sh_t('theme')) . '">'
         . '<span class="gos-theme-dark">' . sh_nav_icon('sun') . '</span><span class="gos-theme-light">' . sh_nav_icon('moon') . '</span>'
         . '</button>';
     if ($user !== null) {
@@ -227,13 +253,13 @@ function sh_layout_end(): void
     echo '<div class="gos-modal" id="gosQuickModal" hidden aria-hidden="true" role="dialog" aria-modal="true">'
         . '<div class="gos-modal-backdrop" data-quick-close></div>'
         . '<div class="gos-modal-card">'
-        . '<header class="gos-modal-head"><div><span class="gos-eyebrow">Création rapide</span><h2 id="gosQuickTitle">Nouveau</h2></div>'
-        . '<button type="button" class="gos-icon-btn" data-quick-close aria-label="Fermer">&times;</button></header>'
+        . '<header class="gos-modal-head"><div><span class="gos-eyebrow">' . sh_e(sh_t('quick_create')) . '</span><h2 id="gosQuickTitle">' . sh_e(sh_t('new')) . '</h2></div>'
+        . '<button type="button" class="gos-icon-btn" data-quick-close aria-label="' . sh_e(sh_t('close')) . '">&times;</button></header>'
         . '<form id="gosQuickForm" class="gos-modal-body">'
         . '<div id="gosQuickFields"></div>'
         . '<p class="gos-form-error" id="gosQuickError" hidden></p>'
-        . '<footer class="gos-modal-foot"><button type="button" class="gos-btn gos-btn-ghost" data-quick-close>Annuler</button>'
-        . '<button type="submit" class="gos-btn gos-btn-primary" id="gosQuickSubmit">Enregistrer</button></footer>'
+        . '<footer class="gos-modal-foot"><button type="button" class="gos-btn gos-btn-ghost" data-quick-close>' . sh_e(sh_t('cancel')) . '</button>'
+        . '<button type="submit" class="gos-btn gos-btn-primary" id="gosQuickSubmit">' . sh_e(sh_t('save')) . '</button></footer>'
         . '</form></div></div>';
 
     echo '<script src="' . sh_e(sh_asset('js/shell.js')) . '"></script>';
@@ -249,7 +275,7 @@ function sh_auth_layout_start(string $title): void
 {
     $theme = $_COOKIE['gos_theme'] ?? 'dark';
     $theme = in_array($theme, ['dark', 'light'], true) ? $theme : 'dark';
-    echo '<!doctype html><html lang="fr" data-theme="' . sh_e($theme) . '"><head>'
+    echo '<!doctype html><html lang="' . sh_e(sh_locale()) . '" dir="' . (sh_is_rtl() ? 'rtl' : 'ltr') . '" data-theme="' . sh_e($theme) . '"><head>'
         . '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         . '<meta name="theme-color" content="#080b10">'
         . '<title>' . sh_e($title) . ' · ' . sh_e(GOS_APP_NAME) . '</title>'

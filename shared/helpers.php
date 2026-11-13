@@ -204,6 +204,22 @@ function sh_date_long_fr(?string $date = null): string
     return $days[(int) date('w', $ts)] . ' ' . date('j', $ts) . ' ' . $months[(int) date('n', $ts)] . ' ' . date('Y', $ts);
 }
 
+/** Date longue localisée (français ou arabe, mois marocains). */
+function sh_date_long(?string $date = null): string
+{
+    if (sh_locale() !== 'ar') {
+        return sh_date_long_fr($date);
+    }
+
+    $ts = $date !== null ? strtotime($date) : time();
+    if ($ts === false) {
+        return (string) $date;
+    }
+    $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    $months = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو', 'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر'];
+    return $days[(int) date('w', $ts)] . ' ' . date('j', $ts) . ' ' . $months[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
 function sh_post(string $key, mixed $default = ''): mixed
 {
     return $_POST[$key] ?? $default;

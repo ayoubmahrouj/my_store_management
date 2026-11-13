@@ -15,9 +15,9 @@ require __DIR__ . '/inc/helpers.php';
 require_once __DIR__ . '/inc/pdf.php';
 require __DIR__ . '/inc/layout.php';
 
-// Changement de langue (FR / AR)
+// Changement de langue (FR / AR) — synchronise aussi le module Chèques.
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'ar'], true)) {
-    $_SESSION['locale'] = $_GET['lang'];
+    sh_set_locale((string) $_GET['lang']);
     $target = preg_replace('/[^a-z_]/', '', (string) ($_GET['p'] ?? 'pos')) ?: 'pos';
     unset($_GET['lang'], $_GET['p']);
     redirect($target, $_GET);

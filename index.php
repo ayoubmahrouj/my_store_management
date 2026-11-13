@@ -80,99 +80,99 @@ try {
 
 $nav = [];
 if (core_is_admin()) {
-    $nav['Administration'] = [
-        ['key' => 'users', 'label' => 'Utilisateurs', 'href' => sh_module_url('stock', '/utilisateurs'), 'icon' => 'users'],
-        ['key' => 'settings', 'label' => 'Paramètres', 'href' => sh_module_url('stock', '/parametres'), 'icon' => 'settings'],
+    $nav[sh_t('administration')] = [
+        ['key' => 'users', 'label' => sh_t('users'), 'href' => sh_module_url('stock', '/utilisateurs'), 'icon' => 'users'],
+        ['key' => 'settings', 'label' => sh_t('settings'), 'href' => sh_module_url('stock', '/parametres'), 'icon' => 'settings'],
     ];
 }
 
 sh_layout_start([
-    'title' => 'Tableau de bord',
+    'title' => sh_t('dashboard'),
     'module' => 'home',
     'active' => '',
     'nav' => $nav,
-    'subtitle' => 'Vue d\'ensemble · ' . sh_date_long_fr(),
+    'subtitle' => sh_t('overview') . ' · ' . sh_date_long(),
 ]);
 ?>
 
 <section class="gos-kpis">
     <div class="gos-kpi">
-        <div class="gos-kpi-label">Produits actifs</div>
+        <div class="gos-kpi-label"><?= sh_e(sh_t('kpi_products')) ?></div>
         <div class="gos-kpi-value"><?= number_format($metrics['products'], 0, ',', ' ') ?></div>
-        <div class="gos-kpi-hint"><?= sh_money($metrics['stock_value']) ?> de stock</div>
+        <div class="gos-kpi-hint"><?= sh_e(sh_t('kpi_stock_value', ['amount' => sh_money($metrics['stock_value'])])) ?></div>
     </div>
     <div class="gos-kpi green">
-        <div class="gos-kpi-label">Crédits ouverts</div>
+        <div class="gos-kpi-label"><?= sh_e(sh_t('kpi_credits_open')) ?></div>
         <div class="gos-kpi-value"><?= sh_money($metrics['credit_due']) ?></div>
-        <div class="gos-kpi-hint"><?= number_format($metrics['clients'], 0, ',', ' ') ?> client(s) actif(s)</div>
+        <div class="gos-kpi-hint"><?= sh_e(sh_t('kpi_clients_active', ['count' => number_format($metrics['clients'], 0, ',', ' ')])) ?></div>
     </div>
     <div class="gos-kpi gold">
-        <div class="gos-kpi-label">Chèques à venir (30 j)</div>
+        <div class="gos-kpi-label"><?= sh_e(sh_t('kpi_cheques_soon')) ?></div>
         <div class="gos-kpi-value"><?= number_format($metrics['cheques_soon'], 0, ',', ' ') ?></div>
-        <div class="gos-kpi-hint"><?= sh_money($metrics['cheques_unpaid']) ?> non réglés</div>
+        <div class="gos-kpi-hint"><?= sh_e(sh_t('kpi_unpaid', ['amount' => sh_money($metrics['cheques_unpaid'])])) ?></div>
     </div>
     <div class="gos-kpi danger">
-        <div class="gos-kpi-label">Alertes</div>
+        <div class="gos-kpi-label"><?= sh_e(sh_t('kpi_alerts')) ?></div>
         <div class="gos-kpi-value"><?= number_format($metrics['low_stock'] + $metrics['cheques_rejected'], 0, ',', ' ') ?></div>
-        <div class="gos-kpi-hint"><?= (int) $metrics['low_stock'] ?> seuil(s) stock · <?= (int) $metrics['cheques_rejected'] ?> rejet(s)</div>
+        <div class="gos-kpi-hint"><?= sh_e(sh_t('kpi_alerts_hint', ['low' => (int) $metrics['low_stock'], 'rejected' => (int) $metrics['cheques_rejected']])) ?></div>
     </div>
 </section>
 
 <section class="gos-grid gos-grid-3" style="margin-top:16px">
     <article class="gos-module-card">
         <div class="gos-module-icon"><?= sh_nav_icon('box') ?></div>
-        <h3>Stock</h3>
-        <p>Produits, entrées, sorties, transferts, inventaires et valorisation multi-sites.</p>
+        <h3><?= sh_e(sh_t('stock')) ?></h3>
+        <p><?= sh_e(sh_t('module_stock_desc')) ?></p>
         <div class="gos-module-links">
-            <a href="<?= sh_e(sh_module_url('stock', '/dashboard')) ?>">Tableau de bord</a>
-            <a href="<?= sh_e(sh_module_url('stock', '/produits')) ?>">Produits</a>
-            <a href="<?= sh_e(sh_module_url('stock', '/entrees')) ?>">Entrées</a>
-            <a href="<?= sh_e(sh_module_url('stock', '/sorties')) ?>">Sorties</a>
-            <a href="<?= sh_e(sh_module_url('stock', '/referentiels')) ?>">Référentiels</a>
+            <a href="<?= sh_e(sh_module_url('stock', '/dashboard')) ?>"><?= sh_e(sh_t('link_dashboard')) ?></a>
+            <a href="<?= sh_e(sh_module_url('stock', '/produits')) ?>"><?= sh_e(sh_t('link_products')) ?></a>
+            <a href="<?= sh_e(sh_module_url('stock', '/entrees')) ?>"><?= sh_e(sh_t('link_entries')) ?></a>
+            <a href="<?= sh_e(sh_module_url('stock', '/sorties')) ?>"><?= sh_e(sh_t('link_exits')) ?></a>
+            <a href="<?= sh_e(sh_module_url('stock', '/referentiels')) ?>"><?= sh_e(sh_t('link_references')) ?></a>
         </div>
     </article>
 
     <article class="gos-module-card">
         <div class="gos-module-icon"><?= sh_nav_icon('cart') ?></div>
-        <h3>Crédits & Ventes</h3>
-        <p>Point de vente, clients, ventes comptoir ou à crédit, encaissements et relances.</p>
+        <h3><?= sh_e(sh_t('credits')) ?></h3>
+        <p><?= sh_e(sh_t('module_credits_desc')) ?></p>
         <div class="gos-module-links">
-            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=dashboard')) ?>">Tableau de bord</a>
-            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=pos')) ?>">Point de vente</a>
-            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=clients')) ?>">Clients</a>
-            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=credits')) ?>">Crédits</a>
-            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=payments')) ?>">Paiements</a>
+            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=dashboard')) ?>"><?= sh_e(sh_t('link_dashboard')) ?></a>
+            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=pos')) ?>"><?= sh_e(sh_t('link_pos')) ?></a>
+            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=clients')) ?>"><?= sh_e(sh_t('link_clients')) ?></a>
+            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=credits')) ?>"><?= sh_e(sh_t('link_credits')) ?></a>
+            <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=payments')) ?>"><?= sh_e(sh_t('link_payments')) ?></a>
         </div>
     </article>
 
     <article class="gos-module-card">
         <div class="gos-module-icon"><?= sh_nav_icon('wallet') ?></div>
-        <h3>Chèques & Effets</h3>
-        <p>Carnets, bénéficiaires, échéances, règlements, rejets et alertes automatiques.</p>
+        <h3><?= sh_e(sh_t('cheques')) ?></h3>
+        <p><?= sh_e(sh_t('module_cheques_desc')) ?></p>
         <div class="gos-module-links">
-            <a href="<?= sh_e(sh_module_url('cheques', '/index.php')) ?>">Tableau de bord</a>
-            <a href="<?= sh_e(sh_module_url('cheques', '/documents/index.php')) ?>">Chèques & effets</a>
-            <a href="<?= sh_e(sh_module_url('cheques', '/beneficiaires/index.php')) ?>">Bénéficiaires</a>
-            <a href="<?= sh_e(sh_module_url('cheques', '/calendrier/index.php')) ?>">Calendrier</a>
-            <a href="<?= sh_e(sh_module_url('cheques', '/alertes/index.php')) ?>">Alertes</a>
+            <a href="<?= sh_e(sh_module_url('cheques', '/index.php')) ?>"><?= sh_e(sh_t('link_dashboard')) ?></a>
+            <a href="<?= sh_e(sh_module_url('cheques', '/documents/index.php')) ?>"><?= sh_e(sh_t('link_documents')) ?></a>
+            <a href="<?= sh_e(sh_module_url('cheques', '/beneficiaires/index.php')) ?>"><?= sh_e(sh_t('link_beneficiaries')) ?></a>
+            <a href="<?= sh_e(sh_module_url('cheques', '/calendrier/index.php')) ?>"><?= sh_e(sh_t('link_calendar')) ?></a>
+            <a href="<?= sh_e(sh_module_url('cheques', '/alertes/index.php')) ?>"><?= sh_e(sh_t('link_alerts')) ?></a>
         </div>
     </article>
 </section>
 
 <section class="gos-grid gos-grid-2" style="margin-top:16px">
     <div class="gos-card">
-        <div class="gos-card-title"><h2>Activité récente</h2><span class="gos-badge blue"><?= count($recent) ?> événement(s)</span></div>
+        <div class="gos-card-title"><h2><?= sh_e(sh_t('recent_activity')) ?></h2><span class="gos-badge blue"><?= sh_e(sh_t('events', ['count' => count($recent)])) ?></span></div>
         <?php if ($recent === []): ?>
-            <div class="gos-empty">Aucune activité enregistrée pour le moment.</div>
+            <div class="gos-empty"><?= sh_e(sh_t('no_activity')) ?></div>
         <?php else: ?>
             <table class="gos-table">
-                <thead><tr><th>Action</th><th>Élément</th><th>Utilisateur</th><th>Date</th></tr></thead>
+                <thead><tr><th><?= sh_e(sh_t('col_action')) ?></th><th><?= sh_e(sh_t('col_item')) ?></th><th><?= sh_e(sh_t('col_user')) ?></th><th><?= sh_e(sh_t('col_date')) ?></th></tr></thead>
                 <tbody>
                 <?php foreach ($recent as $entry): ?>
                     <tr>
                         <td><strong><?= sh_e((string) $entry['action']) ?></strong></td>
                         <td><?= sh_e((string) ($entry['entity_type'] ?? '—')) ?></td>
-                        <td><?= sh_e((string) ($entry['user_name'] ?? 'Système')) ?></td>
+                        <td><?= sh_e((string) ($entry['user_name'] ?? sh_t('system'))) ?></td>
                         <td><?= sh_e(date('d/m/Y H:i', strtotime((string) $entry['created_at']))) ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -182,19 +182,19 @@ sh_layout_start([
     </div>
 
     <div class="gos-card">
-        <div class="gos-card-title"><h2>Démarrage rapide</h2></div>
-        <p class="gos-help" style="margin-top:0">Le bouton <strong>+</strong> à côté de chaque liste déroulante crée un nouvel élément sans quitter la page (marque, catégorie, unité, fournisseur, client, produit, carnet, personne).</p>
-        <ul style="margin:10px 0 0;padding-left:18px;color:var(--gos-muted);font-size:12.5px;line-height:1.9">
-            <li>Créez vos référentiels depuis <a href="<?= sh_e(sh_module_url('stock', '/referentiels')) ?>">Stock → Référentiels</a>.</li>
-            <li>Ajoutez un client depuis <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=clients')) ?>">Crédits → Clients</a>.</li>
-            <li>Enregistrez un chèque ou un effet depuis <a href="<?= sh_e(sh_module_url('cheques', '/documents/form.php')) ?>">Chèques → Nouveau document</a>.</li>
+        <div class="gos-card-title"><h2><?= sh_e(sh_t('quick_start')) ?></h2></div>
+        <p class="gos-help" style="margin-top:0"><?= sh_t('quick_start_help') ?></p>
+        <ul style="margin:10px 0 0;padding-inline-start:18px;color:var(--gos-muted);font-size:12.5px;line-height:1.9">
+            <li><?= sh_e(sh_t('quick_start_refs')) ?> <a href="<?= sh_e(sh_module_url('stock', '/referentiels')) ?>"><?= sh_e(sh_t('stock')) ?> → <?= sh_e(sh_t('link_references')) ?></a>.</li>
+            <li><?= sh_e(sh_t('quick_start_client')) ?> <a href="<?= sh_e(sh_module_url('credits', '/index.php?p=clients')) ?>"><?= sh_e(sh_t('credits')) ?> → <?= sh_e(sh_t('link_clients')) ?></a>.</li>
+            <li><?= sh_e(sh_t('quick_start_cheque')) ?> <a href="<?= sh_e(sh_module_url('cheques', '/documents/form.php')) ?>"><?= sh_e(sh_t('cheques')) ?> → <?= sh_e(sh_t('new')) ?></a>.</li>
             <?php if (core_is_admin()): ?>
-                <li>Gérez les comptes et l'accès aux modules dans <a href="<?= sh_e(sh_module_url('stock', '/utilisateurs')) ?>">Utilisateurs</a>.</li>
+                <li><?= sh_e(sh_t('quick_start_users')) ?> <a href="<?= sh_e(sh_module_url('stock', '/utilisateurs')) ?>"><?= sh_e(sh_t('users')) ?></a>.</li>
             <?php endif; ?>
         </ul>
         <?php if ((int) $metrics['drafts'] > 0): ?>
             <div class="gos-alert gos-alert-warning" style="margin-top:14px">
-                <?= (int) $metrics['drafts'] ?> document(s) de stock en brouillon à valider.
+                <?= sh_e(sh_t('drafts_alert', ['count' => (int) $metrics['drafts']])) ?>
             </div>
         <?php endif; ?>
     </div>
