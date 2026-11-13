@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `import_map` (
 --   `nature` = forme juridique  : PERSONNE | SOCIETE
 --   `role`   = rôle interne, renseigné uniquement pour type = PERSONNE
 -- Les vues de compatibilité `beneficiaire`, `suppliers` et `personne`
--- exposent cette table sous les noms historiques (lecture seule côté noms).
+-- exposent cette table sous les noms historiques (les écritures ciblent `clients`).
 CREATE TABLE IF NOT EXISTS `clients` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(160) NOT NULL,
