@@ -211,7 +211,7 @@ final class ProductController
         return 'Site #' . $id;
     }
 
-    /** @param array<int, \App\Domain\Entities\Category>|array<int, \App\Domain\Entities\Brand> $items */
+    /** @param array<int, \App\Domain\Entities\Category>|array<int, \Gos\Domain\Entities\Marque> $items */
     private function nameLabel(array $items, int $id): string
     {
         foreach ($items as $item) {

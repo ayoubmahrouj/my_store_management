@@ -42,33 +42,30 @@ if ($errors) {
     redirect('personnes/form.php' . ($id > 0 ? '?id=' . $id : ''));
 }
 
-$data = [
+$repo = new \Gos\Domain\Repositories\TiersRepository();
+$responsable = new \Gos\Domain\Entities\Responsable(
+    $id > 0 ? $id : null,
     $nom,
-    $role,
+    \Gos\Domain\Entities\Personne::NATURE_PERSONNE,
     $telephone !== '' ? $telephone : null,
     $email !== '' ? $email : null,
     $adresse !== '' ? $adresse : null,
-];
+    null,
+    null,
+    true,
+    $role,
+);
 
 if ($id > 0) {
-    if (!fetch_one("SELECT id FROM clients WHERE id = ? AND type = 'PERSONNE'", [$id])) {
+    if (!$repo->exists($id, 'PERSONNE')) {
         flash('error', t('Personne introuvable.'));
         redirect('personnes/index.php');
     }
-    q(
-        "UPDATE clients SET name = ?, role = ?, phone = ?, email = ?, address = ?
-         WHERE id = ? AND type = 'PERSONNE'",
-        array_merge($data, [$id])
-    );
+    $repo->save($responsable);
     audit('MODIFICATION', 'PERSONNE', $id, $nom);
     flash('success', t('Personne modifiée.'));
 } else {
-    q(
-        "INSERT INTO clients (name, type, role, phone, email, address, created_at)
-         VALUES (?, 'PERSONNE', ?, ?, ?, ?, NOW())",
-        $data
-    );
-    $id = last_insert_id();
+    $id = $repo->save($responsable);
     audit('CREATION', 'PERSONNE', $id, $nom);
     flash('success', t('Personne créée.'));
 }

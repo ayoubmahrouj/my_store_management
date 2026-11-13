@@ -2,7 +2,7 @@
 /** @var array<string, mixed>|null $product */
 /** @var array<string, mixed> $old */
 /** @var array<int, string> $errors */
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var array<int, \App\Domain\Entities\Category> $categories */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
 $product = $product ?? null;

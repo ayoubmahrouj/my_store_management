@@ -28,9 +28,10 @@ if ($name === '') {
     exit;
 }
 
-q('INSERT INTO clients (name, phone) VALUES (?, ?)', [$name, $phone]);
+$client = (new \Gos\Domain\Repositories\TiersRepository())
+    ->quickCreateClient($name, $phone !== '' ? $phone : null);
 
 echo json_encode([
-    'id' => (int) db()->lastInsertId(),
-    'name' => $name,
+    'id' => $client->id(),
+    'name' => $client->name(),
 ]);

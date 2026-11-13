@@ -5,7 +5,7 @@
 /** @var array<int, \App\Domain\Entities\StockDocument> $documents */
 /** @var array{draft: int, done: int, shipped: int, total: int, total_cost: float} $stats */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
-/** @var array<int, \App\Domain\Entities\Supplier> $suppliers */
+/** @var array<int, \Gos\Domain\Entities\Fournisseur> $suppliers */
 /** @var array<string, string> $motifs */
 /** @var array{q: string, status: string, location_id: int, date_from: string, date_to: string, motif: string, supplier_id: int, product_q: string, amount_from: string, amount_to: string} $filters */
 /** @var int $page */

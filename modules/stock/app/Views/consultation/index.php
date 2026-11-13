@@ -3,7 +3,7 @@
 /** @var array{q: string, location_id: int, category_id: int, brand_id: int, unit_id: int, status: string, min_qty: string, max_qty: string, min_value: string, max_value: string, min_margin: string, max_margin: string, sort: string} $filters */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
 /** @var array<int, \App\Domain\Entities\Category> $categories */
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
 /** @var array{products: int, quantity: float, value: float, saleValue: float, margin: float, alerts: int} $summary */
 /** @var int $page */

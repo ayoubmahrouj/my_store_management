@@ -6,11 +6,11 @@ namespace App\Http\Controllers\Web;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
-use App\Domain\Entities\Brand;
 use App\Domain\Entities\Category;
 use App\Domain\Entities\Location;
-use App\Domain\Entities\Product;
-use App\Domain\Entities\Supplier;
+use Gos\Domain\Entities\Fournisseur;
+use Gos\Domain\Entities\Marque;
+use Gos\Domain\Entities\Produit;
 use App\Infrastructure\Export\ExportDocument;
 use App\Infrastructure\Persistence\PdoDocumentRepository;
 use App\Infrastructure\Persistence\PdoProductRepository;
@@ -42,7 +42,7 @@ final class ReportController
             $productRepo->search(null, null, true, array_merge($this->productFilters($filters), ['status' => 'out', 'sort' => 'low', 'limit' => 12])),
             $productRepo->search(null, null, true, array_merge($this->productFilters($filters), ['status' => 'low', 'sort' => 'low', 'limit' => 12]))
         );
-        usort($lowStock, static fn (Product $a, Product $b): int => $a->quantity() <=> $b->quantity());
+        usort($lowStock, static fn (Produit $a, Produit $b): int => $a->quantity() <=> $b->quantity());
 
         $byLocation = $productRepo->stockByLocation($filters);
 
@@ -347,7 +347,7 @@ final class ReportController
         return 'Site #' . $id;
     }
 
-    /** @param array<int, Category>|array<int, Brand> $items */
+    /** @param array<int, Category>|array<int, Marque> $items */
     private function nameLabel(array $items, int $id): string
     {
         foreach ($items as $item) {

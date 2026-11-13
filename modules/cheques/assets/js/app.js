@@ -120,7 +120,7 @@
       html += '<div class="field"><label for="qc-nom">' + tr('Nom', 'Nom') + ' <span class="req">*</span></label>' +
         '<input id="qc-nom" name="nom" class="input" required maxlength="150"></div>' +
         '<div class="field mt-16"><label for="qc-type">' + tr('Type', 'Type') + '</label>' +
-        '<select id="qc-type" name="type" class="select">' +
+        '<select id="qc-type" name="nature" class="select">' +
         '<option value="SOCIETE">' + tr('Société', 'Société') + '</option>' +
         '<option value="PERSONNE" selected>' + tr('Personne', 'Personne') + '</option>' +
         '</select></div>' +

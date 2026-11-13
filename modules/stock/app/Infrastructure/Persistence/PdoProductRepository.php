@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Core\Database;
-use App\Domain\Entities\Product;
+use Gos\Domain\Entities\Produit;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -27,7 +27,7 @@ final class PdoProductRepository
      *     min_value?: float, max_value?: float, sort?: string,
      *     limit?: int, offset?: int
      * } $filters
-     * @return array<int, Product>
+     * @return array<int, Produit>
      */
     public function search(?string $term = null, ?int $id = null, bool $activeOnly = true, array $filters = []): array
     {
@@ -45,7 +45,7 @@ final class PdoProductRepository
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        return array_map(fn (array $row): Product => $this->hydrate($row), $stmt->fetchAll());
+        return array_map(fn (array $row): Produit => $this->hydrate($row), $stmt->fetchAll());
     }
 
     /**
@@ -190,7 +190,7 @@ final class PdoProductRepository
         return ' LIMIT ' . $limit . ' OFFSET ' . max(0, (int) ($filters['offset'] ?? 0));
     }
 
-    public function find(int $id): ?Product
+    public function find(int $id): ?Produit
     {
         $rows = $this->search(null, $id);
         return $rows[0] ?? null;
@@ -605,23 +605,9 @@ final class PdoProductRepository
     }
 
     /** @param array<string, mixed> $row */
-    private function hydrate(array $row): Product
+    private function hydrate(array $row): Produit
     {
-        return new Product(
-            (int) $row['id'],
-            (string) $row['sku'],
-            (string) $row['designation'],
-            (string) $row['brand'],
-            (string) $row['category'],
-            (string) $row['unit'],
-            (float) $row['purchase_cost'],
-            (float) $row['sale_price'],
-            (float) $row['min_stock'],
-            (float) $row['quantity'],
-            (float) $row['stock_value'],
-            (string) $row['positions'],
-            (bool) $row['active'],
-        );
+        return Produit::fromRow($row);
     }
 
     /** @param array<string, mixed> $data

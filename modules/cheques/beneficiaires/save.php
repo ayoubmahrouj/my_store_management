@@ -46,35 +46,27 @@ if ($errors) {
     redirect('beneficiaires/form.php' . ($id > 0 ? '?id=' . $id : ''));
 }
 
-$data = [
+$repo = new \Gos\Domain\Repositories\TiersRepository();
+$beneficiaire = new \Gos\Domain\Entities\Beneficiaire(
+    $id > 0 ? $id : null,
     $nom,
     $type,
-    $ice !== '' ? $ice : null,
     $telephone !== '' ? $telephone : null,
     $email !== '' ? $email : null,
     $adresse !== '' ? $adresse : null,
-];
+    $ice !== '' ? $ice : null,
+);
 
 if ($id > 0) {
-    $exists = fetch_one("SELECT id FROM clients WHERE id = ? AND type = 'CLIENT'", [$id]);
-    if (!$exists) {
+    if (!$repo->exists($id, 'CLIENT')) {
         flash('error', t('Bénéficiaire introuvable.'));
         redirect('beneficiaires/index.php');
     }
-    q(
-        "UPDATE clients SET name = ?, nature = ?, ice = ?, phone = ?, email = ?, address = ?
-         WHERE id = ? AND type = 'CLIENT'",
-        array_merge($data, [$id])
-    );
+    $repo->save($beneficiaire);
     audit('MODIFICATION', 'BENEFICIAIRE', $id, $nom);
     flash('success', t('Bénéficiaire modifié.'));
 } else {
-    q(
-        "INSERT INTO clients (name, type, nature, ice, phone, email, address, created_at)
-         VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, NOW())",
-        $data
-    );
-    $id = last_insert_id();
+    $id = $repo->save($beneficiaire);
     audit('CREATION', 'BENEFICIAIRE', $id, $nom);
     flash('success', t('Bénéficiaire créé.'));
 }

@@ -8,7 +8,7 @@
 /** @var string $brandName */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
 /** @var array<int, \App\Domain\Entities\Category> $categoriesList */
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var array<string, mixed> $filters */
 /** @var array{
  *     total_value: float, total_quantity: float, potential_value: float, margin_value: float,

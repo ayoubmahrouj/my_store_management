@@ -1,6 +1,6 @@
 <?php
 /** @var string $term */
-/** @var array<int, \App\Domain\Entities\Product> $products */
+/** @var array<int, \Gos\Domain\Entities\Produit> $products */
 /** @var array{total: int, quantity: float, value: float, low: int} $summary */
 /** @var int $page */
 /** @var int $pages */
@@ -8,7 +8,7 @@
 /** @var bool $canManage */
 /** @var array<string, mixed> $filters */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var array<int, \App\Domain\Entities\Category> $categories */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
 $filterQuery = http_build_query(array_filter([

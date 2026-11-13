@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Web;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
-use App\Domain\Entities\Brand;
 use App\Domain\Entities\Category;
 use App\Domain\Entities\Location;
+use Gos\Domain\Entities\Marque;
 use App\Infrastructure\Export\ExportDocument;
 use App\Infrastructure\Persistence\PdoDocumentRepository;
 use App\Infrastructure\Persistence\PdoProductRepository;
@@ -282,7 +282,7 @@ final class StatisticsController
         return 'Site #' . $id;
     }
 
-    /** @param array<int, Category>|array<int, Brand> $items */
+    /** @param array<int, Category>|array<int, Marque> $items */
     private function nameLabel(array $items, int $id): string
     {
         foreach ($items as $item) {

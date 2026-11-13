@@ -31,6 +31,22 @@ require_once __DIR__ . '/layout.php';
 require_once __DIR__ . '/i18n.php';
 
 /* -------------------------------------------------------------------------
+| Autoload du domaine partagé (namespace Gos\)
+|-------------------------------------------------------------------------*/
+
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'Gos\\';
+    if (!str_starts_with($class, $prefix)) {
+        return;
+    }
+
+    $file = __DIR__ . '/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
+/* -------------------------------------------------------------------------
 | Erreurs
 |-------------------------------------------------------------------------*/
 

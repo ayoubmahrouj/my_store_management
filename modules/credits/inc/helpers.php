@@ -201,10 +201,7 @@ function fr_datetime(?string $date): string
 
 function client_balance(int $clientId): float
 {
-    return (float) scalar(
-        'SELECT COALESCE(SUM(remaining), 0) FROM credits WHERE client_id = ? AND status = ?',
-        [$clientId, 'open']
-    );
+    return (new \Gos\Domain\Repositories\TiersRepository())->balance($clientId);
 }
 
 function client_total_due(int $clientId): float
@@ -463,15 +460,7 @@ function product_brand_id(string $brand): ?int
         return null;
     }
 
-    $id = scalar('SELECT id FROM brands WHERE lower(name) = lower(?) LIMIT 1', [$brand]);
-
-    if ($id !== false && $id !== null) {
-        return (int) $id;
-    }
-
-    q('INSERT INTO brands (name) VALUES (?)', [$brand]);
-
-    return (int) db()->lastInsertId();
+    return (new \Gos\Domain\Repositories\MarqueRepository())->quickCreate($brand)->id();
 }
 
 /**

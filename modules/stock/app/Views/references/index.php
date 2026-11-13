@@ -1,5 +1,5 @@
 <?php
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var int $brandsTotal */
 /** @var int $brandsPage */
 /** @var int $brandsPages */
@@ -8,7 +8,7 @@
 /** @var int $categoriesPage */
 /** @var int $categoriesPages */
 /** @var array<int, \App\Domain\Entities\Unit> $units */
-/** @var array<int, \App\Domain\Entities\Supplier> $suppliers */
+/** @var array<int, \Gos\Domain\Entities\Fournisseur> $suppliers */
 /** @var int $suppliersTotal */
 /** @var int $suppliersPage */
 /** @var int $suppliersPages */

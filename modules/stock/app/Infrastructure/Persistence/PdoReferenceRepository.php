@@ -4,11 +4,11 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Core\Database;
-use App\Domain\Entities\Brand;
 use App\Domain\Entities\Category;
 use App\Domain\Entities\Location;
-use App\Domain\Entities\Supplier;
 use App\Domain\Entities\Unit;
+use Gos\Domain\Entities\Fournisseur;
+use Gos\Domain\Entities\Marque;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -22,7 +22,7 @@ final class PdoReferenceRepository
         $this->pdo = Database::pdo();
     }
 
-    /** @return array<int, Brand> */
+    /** @return array<int, Marque> */
     public function brands(bool $activeOnly = false): array
     {
         $sql = 'SELECT id, name, active FROM brands';
@@ -32,7 +32,7 @@ final class PdoReferenceRepository
         $sql .= ' ORDER BY name ASC';
 
         return array_map(
-            static fn (array $row): Brand => new Brand((int) $row['id'], (string) $row['name'], (bool) $row['active']),
+            static fn (array $row): Marque => Marque::fromRow($row),
             $this->pdo->query($sql)->fetchAll()
         );
     }
@@ -61,7 +61,7 @@ final class PdoReferenceRepository
         );
     }
 
-    /** @return array<int, Supplier> */
+    /** @return array<int, Fournisseur> */
     public function suppliers(bool $activeOnly = false): array
     {
         $sql = 'SELECT id, name, ice, phone, email, address, active FROM suppliers';
@@ -71,15 +71,7 @@ final class PdoReferenceRepository
         $sql .= ' ORDER BY name ASC';
 
         return array_map(
-            static fn (array $row): Supplier => new Supplier(
-                (int) $row['id'],
-                (string) $row['name'],
-                $row['ice'] !== null ? (string) $row['ice'] : null,
-                $row['phone'] !== null ? (string) $row['phone'] : null,
-                $row['email'] !== null ? (string) $row['email'] : null,
-                $row['address'] !== null ? (string) $row['address'] : null,
-                (bool) $row['active'],
-            ),
+            static fn (array $row): Fournisseur => Fournisseur::fromRow($row),
             $this->pdo->query($sql)->fetchAll()
         );
     }

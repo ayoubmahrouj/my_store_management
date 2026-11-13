@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Core\Request;
 use App\Core\Response;
-use App\Domain\Entities\Product;
+use Gos\Domain\Entities\Produit;
 use App\Infrastructure\Persistence\PdoProductRepository;
 
 final class ProductApiController
@@ -15,7 +15,7 @@ final class ProductApiController
         $term = trim((string) $request->query('q', ''));
         $repo = new PdoProductRepository();
         $items = array_map(
-            static fn (Product $product): array => $product->toArray(),
+            static fn (Produit $product): array => $product->toArray(),
             $repo->search($term !== '' ? $term : null)
         );
 

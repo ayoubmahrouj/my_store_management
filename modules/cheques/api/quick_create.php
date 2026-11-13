@@ -34,12 +34,14 @@ try {
         if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             json_response(['ok' => false, 'error' => t('Adresse e-mail invalide.')], 422);
         }
-        q(
-            "INSERT INTO clients (name, type, role, phone, email, address, created_at)
-             VALUES (?, 'PERSONNE', ?, ?, ?, ?, NOW())",
-            [mb_substr($nom, 0, 160), $role, clean(param('telephone'), 30), $email, clean(param('adresse'), 255)]
+        $responsable = (new \Gos\Domain\Repositories\TiersRepository())->quickCreateResponsable(
+            mb_substr($nom, 0, 160),
+            $role,
+            clean(param('telephone'), 30),
+            $email,
+            clean(param('adresse'), 255),
         );
-        $id = last_insert_id();
+        $id = $responsable->id();
         audit('CREATION', 'PERSONNE', $id, $nom);
         json_response([
             'ok'      => true,
@@ -54,7 +56,7 @@ try {
         if ($nom === '') {
             json_response(['ok' => false, 'error' => t('Le nom est obligatoire.')], 422);
         }
-        $btype = (string) param('type', 'PERSONNE');
+        $btype = (string) param('nature', 'PERSONNE');
         if (!in_array($btype, ['SOCIETE', 'PERSONNE'], true)) {
             $btype = 'PERSONNE';
         }
@@ -62,19 +64,15 @@ try {
         if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             json_response(['ok' => false, 'error' => t('Adresse e-mail invalide.')], 422);
         }
-        q(
-            "INSERT INTO clients (name, type, nature, ice, phone, email, address, created_at)
-             VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, NOW())",
-            [
-                mb_substr($nom, 0, 160),
-                $btype,
-                clean(param('ice'), 20),
-                clean(param('telephone'), 30),
-                $email,
-                clean(param('adresse'), 255),
-            ]
+        $beneficiaire = (new \Gos\Domain\Repositories\TiersRepository())->quickCreateBeneficiaire(
+            mb_substr($nom, 0, 160),
+            $btype,
+            clean(param('ice'), 20),
+            clean(param('telephone'), 30),
+            $email,
+            clean(param('adresse'), 255),
         );
-        $id = last_insert_id();
+        $id = $beneficiaire->id();
         audit('CREATION', 'BENEFICIAIRE', $id, $nom);
         json_response([
             'ok'      => true,

@@ -1,11 +1,11 @@
 <?php
 /** @var array{total_value: float, total_quantity: float, products: int, low_stock: int, locations: int} $stats */
-/** @var array<int, \App\Domain\Entities\Product> $products */
-/** @var array<int, \App\Domain\Entities\Product> $lowStock */
+/** @var array<int, \Gos\Domain\Entities\Produit> $products */
+/** @var array<int, \Gos\Domain\Entities\Produit> $lowStock */
 /** @var array<int, array{name: string, products: int, quantity: float, value: float}> $categories */
 /** @var array<int, array{name: string, type: string, quantity: float, value: float}> $byLocation */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
-/** @var array<int, \App\Domain\Entities\Brand> $brands */
+/** @var array<int, \Gos\Domain\Entities\Marque> $brands */
 /** @var array<int, \App\Domain\Entities\Category> $categoriesList */
 /** @var array<int, \App\Domain\Entities\StockMovement> $movements */
 /** @var array{q: string, movement_type: string, direction: string, location_id: int, category_id: int, brand_id: int, status: string, date_from: string, date_to: string} $filters */

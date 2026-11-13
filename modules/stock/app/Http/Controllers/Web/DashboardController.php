@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Web;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
-use App\Domain\Entities\Product;
+use Gos\Domain\Entities\Produit;
 use App\Infrastructure\Persistence\PdoDocumentRepository;
 use App\Infrastructure\Persistence\PdoInventoryRepository;
 use App\Infrastructure\Persistence\PdoProductRepository;
@@ -24,11 +24,11 @@ final class DashboardController
         $locations = $repo->stockByLocation();
         $products = $repo->search();
 
-        usort($products, static fn (Product $a, Product $b): int => $b->stockValue() <=> $a->stockValue());
+        usort($products, static fn (Produit $a, Produit $b): int => $b->stockValue() <=> $a->stockValue());
         $topProducts = array_slice($products, 0, 8);
 
-        $alerts = array_values(array_filter($products, static fn (Product $p): bool => $p->isLowStock()));
-        usort($alerts, static fn (Product $a, Product $b): int => $a->quantity() <=> $b->quantity());
+        $alerts = array_values(array_filter($products, static fn (Produit $p): bool => $p->isLowStock()));
+        usort($alerts, static fn (Produit $a, Produit $b): int => $a->quantity() <=> $b->quantity());
 
         $pending = $docs->pendingCounts();
         $inventoryStats = (new PdoInventoryRepository())->stats();

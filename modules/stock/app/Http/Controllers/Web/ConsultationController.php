@@ -198,7 +198,7 @@ final class ConsultationController
     }
 
     /** @param array<string, mixed> $filters
-     *  @param array{locations: array<int, \App\Domain\Entities\Location>, categories: array<int, \App\Domain\Entities\Category>, brands: array<int, \App\Domain\Entities\Brand>, units: array<int, \App\Domain\Entities\Unit>} $references
+     *  @param array{locations: array<int, \App\Domain\Entities\Location>, categories: array<int, \App\Domain\Entities\Category>, brands: array<int, \Gos\Domain\Entities\Marque>, units: array<int, \App\Domain\Entities\Unit>} $references
      *  @return array<int, string>
      */
     private function meta(array $filters, array $references): array
@@ -262,7 +262,7 @@ final class ConsultationController
         return 'Site #' . $id;
     }
 
-    /** @param array<int, \App\Domain\Entities\Category>|array<int, \App\Domain\Entities\Brand> $items */
+    /** @param array<int, \App\Domain\Entities\Category>|array<int, \Gos\Domain\Entities\Marque> $items */
     private function namedLabel(array $items, int $id): string
     {
         foreach ($items as $item) {

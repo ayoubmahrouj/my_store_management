@@ -4,7 +4,7 @@
 /** @var string $route */
 /** @var array<string, string> $motifs */
 /** @var array<int, \App\Domain\Entities\Location> $locations */
-/** @var array<int, \App\Domain\Entities\Supplier> $suppliers */
+/** @var array<int, \Gos\Domain\Entities\Fournisseur> $suppliers */
 /** @var array<int, array<string, mixed>> $products */
 /** @var array<string, mixed> $old */
 /** @var array<int, string> $errors */

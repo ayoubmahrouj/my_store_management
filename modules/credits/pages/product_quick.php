@@ -30,45 +30,43 @@ if ($name === '') {
     exit;
 }
 
-if ($brand !== '') {
-    $brandId = product_brand_id($brand);
-} else {
-    $brandId = null;
-}
+$produits = new \Gos\Domain\Repositories\ProduitRepository();
+$existing = $produits->findByDesignationAndBrand($name, $brand);
 
-$existing = one(
-    'SELECT * FROM credits_products WHERE lower(brand) = lower(?) AND lower(name) = lower(?)',
-    [$brand, $name]
-);
-
-if ($existing) {
-    if ($existing['is_active']) {
+if ($existing !== null) {
+    if ($existing->isActive()) {
         http_response_code(409);
         echo json_encode(['error' => t('product_exists')]);
         exit;
     }
 
-    q(
-        'UPDATE products SET active = 1, sale_price = ?, description = ? WHERE id = ?',
-        [$price, $description, $existing['id']]
-    );
+    $produits->reactivate($existing->id(), $price, $description);
+    $id = $existing->id();
+} else {
+    $marqueId = $brand !== ''
+        ? (new \Gos\Domain\Repositories\MarqueRepository())->quickCreate($brand)->id()
+        : null;
 
-    echo json_encode([
-        'id' => (int) $existing['id'],
-        'name' => $name . ($brand !== '' ? ' — ' . $brand : ''),
-        'brand' => $brand,
-        'price' => $price,
-    ]);
-    exit;
+    $id = $produits->save(new \Gos\Domain\Entities\Produit(
+        null,
+        $name,
+        null,
+        null,
+        $description,
+        $marqueId,
+        null,
+        null,
+        0.0,
+        $price,
+        null,
+        0.0,
+        true,
+        $brand,
+    ));
 }
 
-q(
-    'INSERT INTO products (brand_id, designation, description, sale_price, active) VALUES (?, ?, ?, ?, 1)',
-    [$brandId, $name, $description, $price]
-);
-
 echo json_encode([
-    'id' => (int) db()->lastInsertId(),
+    'id' => $id,
     'name' => $name . ($brand !== '' ? ' — ' . $brand : ''),
     'brand' => $brand,
     'price' => $price,

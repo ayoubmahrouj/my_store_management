@@ -1,8 +1,8 @@
 <?php
 /** @var array{total_value: float, total_quantity: float, products: int, low_stock: int, locations: int} $stats */
 /** @var array<int, array{name: string, type: string, quantity: float, value: float}> $locations */
-/** @var array<int, \App\Domain\Entities\Product> $topProducts */
-/** @var array<int, \App\Domain\Entities\Product> $alerts */
+/** @var array<int, \Gos\Domain\Entities\Produit> $topProducts */
+/** @var array<int, \Gos\Domain\Entities\Produit> $alerts */
 /** @var array<string, int> $pending */
 /** @var array<int, \App\Domain\Entities\StockMovement> $movements */
 /** @var array{locations: int, brands: int, categories: int, units: int, products: int} $setup */

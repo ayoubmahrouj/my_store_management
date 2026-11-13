@@ -27,13 +27,6 @@ if ($name === '') {
     exit;
 }
 
-$existing = one('SELECT * FROM brands WHERE lower(name) = lower(?)', [$name]);
+$marque = (new \Gos\Domain\Repositories\MarqueRepository())->quickCreate($name);
 
-if ($existing) {
-    echo json_encode(['id' => (int) $existing['id'], 'name' => $existing['name']]);
-    exit;
-}
-
-q('INSERT INTO brands (name) VALUES (?)', [$name]);
-
-echo json_encode(['id' => (int) db()->lastInsertId(), 'name' => $name]);
+echo json_encode(['id' => $marque->id(), 'name' => $marque->name()]);
