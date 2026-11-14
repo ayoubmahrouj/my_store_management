@@ -58,7 +58,7 @@ $beneficiaire = new \Gos\Domain\Entities\Beneficiaire(
 );
 
 if ($id > 0) {
-    if (!$repo->exists($id, 'CLIENT')) {
+    if (!$repo->exists($id, 'beneficiaire')) {
         flash('error', t('Bénéficiaire introuvable.'));
         redirect('beneficiaires/index.php');
     }

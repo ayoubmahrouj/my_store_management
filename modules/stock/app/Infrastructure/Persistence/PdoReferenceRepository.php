@@ -123,8 +123,8 @@ final class PdoReferenceRepository
                     break;
                 case 'supplier':
                     $stmt = $this->pdo->prepare(
-                        "INSERT INTO clients (name, type, ice, phone, email, address)
-                         VALUES (:name, 'FOURNISSEUR', :ice, :phone, :email, :address)"
+                        'INSERT INTO suppliers (name, ice, phone, email, address, active)
+                         VALUES (:name, :ice, :phone, :email, :address, 1)'
                     );
                     $stmt->execute([
                         'name'    => $this->required($data, 'name'),
@@ -170,7 +170,7 @@ final class PdoReferenceRepository
 
         if ($type === 'supplier') {
             $stmt = $this->pdo->prepare(
-                "UPDATE clients SET is_active = 1 - is_active WHERE id = :id AND type = 'FOURNISSEUR'"
+                'UPDATE suppliers SET active = 1 - active WHERE id = :id'
             );
             $stmt->execute(['id' => $id]);
             if ($stmt->rowCount() === 0) {

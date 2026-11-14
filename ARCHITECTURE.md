@@ -625,10 +625,11 @@ classDiagram
 
 ## 6. Modèle de données (vue entités-relations)
 
-30 tables, 9 vues de compatibilité. Les vues (`document_paiement`, `carnet`, `personne`,
-`beneficiaire`, `suppliers`, `credits_products`, `audit_log`, `alerte_config`, `alerte_log`)
-permettent aux requêtes héritées de continuer à fonctionner sans modification. Les
-tiers (clients, fournisseurs, personnes) vivent dans la seule table `CLIENTS`.
+33 tables, 6 vues de compatibilité. Les vues (`credits_products`, `carnet`,
+`document_paiement`, `audit_log`, `alerte_config`, `alerte_log`) permettent aux requêtes
+héritées de continuer à fonctionner sans modification. Chaque population de tiers a sa
+propre table : `CLIENTS`, `BENEFICIAIRE`, `SUPPLIERS` et `PERSONNE` (identifiants
+indépendants, aucune ligne partagée).
 
 ```mermaid
 erDiagram
@@ -640,7 +641,7 @@ erDiagram
     BRANDS ||--o{ PRODUCTS : "marque"
     CATEGORIES ||--o{ PRODUCTS : "classe"
     UNITS ||--o{ PRODUCTS : "mesure"
-    CLIENTS ||--o{ STOCK_DOCUMENTS : "fournit"
+    SUPPLIERS ||--o{ STOCK_DOCUMENTS : "fournit"
 
     PRODUCTS ||--o{ STOCK_LEVELS : "positionne"
     PRODUCTS ||--o{ STOCK_DOCUMENT_LINES : "ligne"
@@ -657,14 +658,15 @@ erDiagram
     CLIENTS ||--o{ CREDITS : "doit"
     CLIENTS ||--o{ PAYMENTS : "paie"
     CLIENTS ||--o{ CREDIT_BONS : "remet"
-    CLIENTS ||--o{ CHEQUES_DOCUMENTS : "beneficiaire"
+    BENEFICIAIRE ||--o{ CHEQUES_DOCUMENTS : "beneficiaire"
+    PERSONNE ||--o{ CHEQUES_DOCUMENTS : "responsable"
 
     SALES ||--o{ SALE_ITEMS : "detaille"
     SALES ||--o| CREDITS : "finance"
     CREDITS ||--o{ PAYMENT_ALLOCATIONS : "regle"
     PAYMENTS ||--o{ PAYMENT_ALLOCATIONS : "alloue"
 
-    CLIENTS ||--o{ CHEQUES_CARNETS : "detient"
+    PERSONNE ||--o{ CHEQUES_CARNETS : "detient"
     CHEQUES_CARNETS ||--o{ CHEQUES_DOCUMENTS : "alimente"
 
     USERS ||--o{ AUDIT_LOGS : "trace"
@@ -675,7 +677,7 @@ erDiagram
 
 | Domaine | Tables |
 |---|---|
-| Socle partagé | `roles`, `locations`, `users`, `clients` (tiers uniques : clients / fournisseurs / personnes), `brands`, `categories`, `units`, `products`, `import_map` |
+| Socle partagé | `roles`, `locations`, `users`, `clients`, `beneficiaire`, `suppliers`, `personne`, `brands`, `categories`, `units`, `products`, `import_map` |
 | Stock | `stock_documents`, `stock_document_lines`, `stock_movements`, `stock_levels`, `inventory_sessions`, `inventory_lines`, `document_sequences` |
 | Crédits & Ventes | `sales`, `sale_items`, `credits`, `payments`, `payment_allocations`, `credit_bons` |
 | Chèques & Effets | `cheques_carnets`, `cheques_documents`, `cheques_alert_config`, `cheques_alert_log` |

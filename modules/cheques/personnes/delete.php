@@ -24,7 +24,7 @@ if ($nbDocs > 0 || $nbCarnets > 0) {
 }
 
 try {
-    q("DELETE FROM clients WHERE id = ? AND type = 'PERSONNE'", [$id]);
+    q('DELETE FROM personne WHERE id = ?', [$id]);
     audit('SUPPRESSION', 'PERSONNE', $id, (string) $item['nom']);
     flash('success', t('Personne supprimée.'));
 } catch (PDOException $e) {

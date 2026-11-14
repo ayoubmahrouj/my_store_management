@@ -57,7 +57,7 @@ $responsable = new \Gos\Domain\Entities\Responsable(
 );
 
 if ($id > 0) {
-    if (!$repo->exists($id, 'PERSONNE')) {
+    if (!$repo->exists($id, 'personne')) {
         flash('error', t('Personne introuvable.'));
         redirect('personnes/index.php');
     }

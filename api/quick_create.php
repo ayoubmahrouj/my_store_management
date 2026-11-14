@@ -26,8 +26,8 @@ if ($raw !== '' && str_contains(strtolower((string) ($_SERVER['CONTENT_TYPE'] ??
 
 $aliases = [
     'marque' => 'brand', 'categorie' => 'category', 'catégorie' => 'category',
-    'fournisseur' => 'supplier', 'site' => 'location', 'beneficiaire' => 'client',
-    'bénéficiaire' => 'client', 'produit' => 'product', 'carnet' => 'carnet',
+    'fournisseur' => 'supplier', 'site' => 'location', 'beneficiaire' => 'beneficiaire',
+    'bénéficiaire' => 'beneficiaire', 'produit' => 'product', 'carnet' => 'carnet',
     'personne' => 'personne', 'client' => 'client', 'brand' => 'brand',
     'societe' => 'societe', 'société' => 'societe', 'company' => 'societe',
     'category' => 'category', 'unit' => 'unit', 'supplier' => 'supplier',
@@ -130,12 +130,12 @@ try {
         case 'supplier':
             $name = $str('name', 160);
             qc_required(['Nom du fournisseur' => $name]);
-            $exists = core_scalar("SELECT id FROM clients WHERE type = 'FOURNISSEUR' AND name = ?", [$name]);
+            $exists = core_scalar('SELECT id FROM suppliers WHERE name = ?', [$name]);
             if ($exists !== false) {
                 sh_json(['ok' => true, 'item' => ['id' => (int) $exists, 'label' => $name]]);
             }
             core_q(
-                "INSERT INTO clients (name, type, ice, phone, email, address) VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?)",
+                'INSERT INTO suppliers (name, ice, phone, email, address, active) VALUES (?, ?, ?, ?, ?, 1)',
                 [$name, $str('ice', 30), $str('phone', 30), $str('email', 160), $str('address', 255)]
             );
             $id = core_insert_id();
@@ -164,8 +164,8 @@ try {
             $nature = strtoupper($str('type', 20)) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE';
             qc_required(['Nom / raison sociale' => $name]);
             core_q(
-                "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active)
-                 VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, ?, 1)",
+                'INSERT INTO clients (name, nature, phone, email, address, ice, credit_limit, is_active)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
                 [$name, $nature, $str('phone', 30), $str('email', 160), $str('address', 255), $str('ice', 30), $num('credit_limit')]
             );
             $id = core_insert_id();
@@ -176,9 +176,21 @@ try {
             $name = $str('name', 160);
             qc_required(['Nom / raison sociale' => $name]);
             core_q(
-                "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active)
-                 VALUES (?, 'CLIENT', 'SOCIETE', ?, ?, ?, ?, ?, 1)",
+                "INSERT INTO clients (name, nature, phone, email, address, ice, credit_limit, is_active)
+                 VALUES (?, 'SOCIETE', ?, ?, ?, ?, ?, 1)",
                 [$name, $str('phone', 30), $str('email', 160), $str('address', 255), $str('ice', 30), $num('credit_limit')]
+            );
+            $id = core_insert_id();
+            $label = $name;
+            break;
+
+        case 'beneficiaire':
+            $name = $str('name', 160);
+            $nature = strtoupper($str('type', 20)) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE';
+            qc_required(['Nom / raison sociale' => $name]);
+            core_q(
+                'INSERT INTO beneficiaire (nom, type, ice, telephone, email, adresse) VALUES (?, ?, ?, ?, ?, ?)',
+                [$name, $nature, $str('ice', 30), $str('phone', 30), $str('email', 160), $str('address', 255)]
             );
             $id = core_insert_id();
             $label = $name;
@@ -229,8 +241,8 @@ try {
                 $role = 'EMPLOYE';
             }
             core_q(
-                "INSERT INTO clients (name, type, role, phone, email, address) VALUES (?, 'PERSONNE', ?, ?, ?, ?)",
-                [$nom, $role, $str('telephone', 30), $str('email', 160), $str('address', 255)]
+                'INSERT INTO personne (nom, role, telephone, email, adresse) VALUES (?, ?, ?, ?, ?)',
+                [$nom, $role, $str('telephone', 30), $str('email', 160), $str('adresse', 255)]
             );
             $id = core_insert_id();
             $label = $nom;

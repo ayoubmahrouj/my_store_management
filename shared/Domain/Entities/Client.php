@@ -6,8 +6,8 @@ namespace Gos\Domain\Entities;
 /**
  * Client — tiers auquel on vend (module Crédits / Suivi Stock).
  *
- * Correspond aux lignes `clients` dont `type = 'CLIENT'`.
- * Côté module Chèques, le même tiers est manipulé via {@see Beneficiaire}.
+ * Stocké dans la table `clients`. Les bénéficiaires des chèques vivent dans
+ * leur propre table et sont manipulés via {@see Beneficiaire}.
  */
 class Client extends Personne
 {

@@ -6,8 +6,7 @@ namespace Gos\Domain\Entities;
 /**
  * Fournisseur — tiers auprès duquel on s'approvisionne.
  *
- * Correspond aux lignes `clients` dont `type = 'FOURNISSEUR'`.
- * La vue historique `suppliers` pointe désormais sur la même table.
+ * Stocké dans sa propre table `suppliers` (module Stock).
  */
 final class Fournisseur extends Personne
 {

@@ -57,13 +57,23 @@ try {
     $admins = (int) core_scalar("SELECT COUNT(*) FROM users u JOIN roles r ON r.id = u.role_id WHERE r.code = 'admin' AND u.active = 1");
     $line('Compte administrateur actif', $admins > 0, $admins . ' compte(s)');
 
-    $requiredViews = ['credits_products', 'document_paiement', 'carnet', 'personne', 'beneficiaire', 'suppliers', 'alerte_config', 'alerte_log', 'audit_log'];
+    $requiredViews = ['credits_products', 'document_paiement', 'carnet', 'alerte_config', 'alerte_log', 'audit_log'];
     foreach ($requiredViews as $view) {
         $exists = (int) core_scalar(
             'SELECT COUNT(*) FROM information_schema.views WHERE table_schema = ? AND table_name = ?',
             [(string) sh_config('db.name', 'gestion_our_stock'), $view]
         );
         $line('Vue ' . $view, $exists === 1);
+    }
+
+    // Chaque population de tiers doit avoir sa propre table physique.
+    $requiredTables = ['clients', 'beneficiaire', 'personne', 'suppliers'];
+    foreach ($requiredTables as $table) {
+        $exists = (int) core_scalar(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ? AND table_type = 'BASE TABLE'",
+            [(string) sh_config('db.name', 'gestion_our_stock'), $table]
+        );
+        $line('Table tiers ' . $table, $exists === 1);
     }
 } catch (Throwable $e) {
     $line('Connexion MySQL', false, $e->getMessage());

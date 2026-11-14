@@ -332,8 +332,8 @@ out(sprintf('Catégories : %d · Marques : %d · Unités : %d', count($categoryM
 $clientFindPhone = $pdo->prepare('SELECT id FROM clients WHERE name = ? AND phone = ? LIMIT 1');
 $clientFindName = $pdo->prepare('SELECT id FROM clients WHERE name = ? LIMIT 1');
 $clientInsert = $pdo->prepare(
-    "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at)
-     VALUES (?, 'CLIENT', ?, ?, NULL, ?, ?, 0, 1, ?, ?, NOW())"
+    'INSERT INTO clients (name, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at)
+     VALUES (?, ?, ?, NULL, ?, ?, 0, 1, ?, ?, NOW())'
 );
 
 $pdo->beginTransaction();
@@ -401,10 +401,10 @@ out(sprintf('Clients : %d créés · %d déjà présents', $counts['clients'], $
 | Fournisseurs
 |-------------------------------------------------------------------------*/
 
-$supplierFind = $pdo->prepare("SELECT id FROM clients WHERE type = 'FOURNISSEUR' AND name = ? LIMIT 1");
+$supplierFind = $pdo->prepare('SELECT id FROM suppliers WHERE name = ? LIMIT 1');
 $supplierInsert = $pdo->prepare(
-    "INSERT INTO clients (name, type, ice, phone, email, address, is_active, created_at)
-     VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?, 1, NOW())"
+    'INSERT INTO suppliers (name, ice, phone, email, address, active, created_at)
+     VALUES (?, ?, ?, ?, ?, 1, NOW())'
 );
 
 $pdo->beginTransaction();
@@ -920,7 +920,7 @@ if (source_exists($pdo, 'credit_project') && source_table_exists($pdo, 'credit_p
     $findPhone = $pdo->prepare('SELECT id FROM clients WHERE name = ? AND phone = ? LIMIT 1');
     $findName = $pdo->prepare('SELECT id FROM clients WHERE name = ? LIMIT 1');
     $insert = $pdo->prepare(
-        'INSERT INTO clients (name, phone, email, address, ice, type, credit_limit, is_active, is_passenger, notes, created_at)
+        'INSERT INTO clients (name, phone, email, address, ice, nature, credit_limit, is_active, is_passenger, notes, created_at)
          VALUES (?, ?, ?, ?, NULL, "PERSONNE", 0, ?, 0, ?, NOW())'
     );
     $pdo->beginTransaction();

@@ -416,8 +416,8 @@ if ($stockDb !== null) {
 $supplierMap = [];
 if ($stockDb !== null && src_exists($server, $stockDb, 'suppliers')) {
     $insertSupplier = $pdo->prepare(
-        "INSERT INTO clients (name, type, ice, phone, email, address, is_active, created_at)
-         VALUES (?, 'FOURNISSEUR', ?, ?, ?, ?, ?, ?)"
+        'INSERT INTO suppliers (name, ice, phone, email, address, active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
     foreach (src_rows($server, $stockDb, 'suppliers') as $row) {
         $insertSupplier->execute([
@@ -437,8 +437,12 @@ echo "Référentiels importés.\n";
 
 $clientMap = [];
 $insertClient = $pdo->prepare(
-    "INSERT INTO clients (name, type, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at, updated_at)
-     VALUES (?, 'CLIENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    'INSERT INTO clients (name, nature, phone, email, address, ice, credit_limit, is_active, is_passenger, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+);
+$insertBeneficiaire = $pdo->prepare(
+    'INSERT INTO beneficiaire (nom, type, telephone, email, adresse, ice, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)'
 );
 
 if ($creditsDb !== null && src_exists($server, $creditsDb, 'clients')) {
@@ -456,13 +460,12 @@ if ($creditsDb !== null && src_exists($server, $creditsDb, 'clients')) {
 
 if ($chequesDb !== null && src_exists($server, $chequesDb, 'beneficiaire')) {
     foreach (src_rows($server, $chequesDb, 'beneficiaire') as $row) {
-        $insertClient->execute([
+        $insertBeneficiaire->execute([
             (string) $row['nom'],
             strtoupper((string) ($row['type'] ?? 'PERSONNE')) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE',
             $row['telephone'] ?? null, $row['email'] ?? null,
             $row['adresse'] ?? null, $row['ice'] ?? null,
-            0, 1, 0, null,
-            $row['created_at'] ?? date('Y-m-d H:i:s'), null,
+            $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $clientMap['cheques:' . (int) $row['id']] = (int) $pdo->lastInsertId();
     }
@@ -761,8 +764,8 @@ if ($chequesDb !== null) {
     $personneMap = [];
     foreach (src_rows($server, $chequesDb, 'personne') as $row) {
         $pdo->prepare(
-            "INSERT INTO clients (name, type, role, phone, email, address, created_at)
-             VALUES (?, 'PERSONNE', ?, ?, ?, ?, ?)"
+            'INSERT INTO personne (nom, role, telephone, email, adresse, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)'
         )->execute([
             (string) $row['nom'], (string) ($row['role'] ?? 'EMPLOYE'),
             $row['telephone'] ?? null, $row['email'] ?? null, $row['adresse'] ?? null,

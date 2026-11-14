@@ -112,14 +112,15 @@ Formats acceptés : JPG, PNG, WEBP — 6 Mo maximum.
 
 ## 4 ter. Données communes — une seule table par entité
 
-Aucune entité n'est dupliquée entre les modules : il existe **une table commune
-unique** par concept, partagée par Stock, Crédits et Chèques.
+Aucune entité n'est dupliquée entre les modules : il existe **une table par
+concept**, partagée par Stock, Crédits et Chèques.
 
-| Entité | Table unique |
+| Entité | Table |
 |---|---|
-| Tiers : clients / bénéficiaires | `clients` (`type` = `CLIENT`) |
-| Tiers : fournisseurs | `clients` (`type` = `FOURNISSEUR`) |
-| Tiers : personnes internes | `clients` (`type` = `PERSONNE`) |
+| Tiers : clients | `clients` |
+| Tiers : bénéficiaires de chèques | `beneficiaire` |
+| Tiers : fournisseurs | `suppliers` |
+| Tiers : personnes internes | `personne` |
 | Produits | `products` |
 | Marques | `brands` |
 | Catégories | `categories` |
@@ -130,16 +131,14 @@ unique** par concept, partagée par Stock, Crédits et Chèques.
 | Crédits / bons société | `credits` / `credit_bons` |
 | Stock | `stock_documents`, `stock_document_lines`, `stock_levels` |
 
-**Une seule table de tiers** : `clients` regroupe clients, fournisseurs et
-personnes internes (colonne `type` = `CLIENT` / `FOURNISSEUR` / `PERSONNE`,
-`nature` = `PERSONNE` / `SOCIETE`, `role` pour les personnes internes). Les
-anciens noms utilisés par le code historique sont des **vues de compatibilité**
-(aucune donnée dupliquée) : `beneficiaire` → `clients` (type `CLIENT`),
-`suppliers` → `clients` (type `FOURNISSEUR`), `personne` → `clients` (type
-`PERSONNE`), `credits_products` → `products`+`brands`, `carnet` →
-`cheques_carnets`, `document_paiement` → `cheques_documents`,
-`alerte_config`/`alerte_log` → `cheques_alert_*`, `audit_log` → `audit_logs`.
-Les écritures ciblent directement `clients` en fixant `type`.
+**Chaque population de tiers a sa propre table physique** : `clients`,
+`beneficiaire`, `suppliers` et `personne` sont indépendantes, avec leurs
+propres identifiants. Aucun client n'est exposé comme bénéficiaire (ou
+inversement). Les vues de compatibilité restantes ne concernent que l'ancien
+vocabulaire des chèques et des produits : `credits_products` →
+`products`+`brands`, `carnet` → `cheques_carnets`, `document_paiement` →
+`cheques_documents`, `alerte_config`/`alerte_log` → `cheques_alert_*`,
+`audit_log` → `audit_logs`.
 
 **Informations société** : source unique = table `settings`
 (clés `company_name`, `company_address`, `company_phone`, `company_email`),
@@ -171,13 +170,13 @@ gestion_unifiee/
 ## 6. Base de données
 
 - Nom par défaut : `gestion_our_stock`
-- Tables partagées : `users`, `roles`, `clients` (tiers uniques : clients,
-  fournisseurs, personnes), `products`, `brands`, `categories`, `units`,
-  `locations`, `settings`, `audit_logs`…
+- Tables partagées : `users`, `roles`, `clients`, `beneficiaire`, `suppliers`,
+  `personne`, `products`, `brands`, `categories`, `units`, `locations`,
+  `settings`, `audit_logs`…
 - Tables spécifiques préfixées : `stock_*`, `sales` / `credits` / `payments`,
   `cheques_*`.
-- Vues de compatibilité (`credits_products`, `carnet`, `personne`,
-  `beneficiaire`, `suppliers`, `document_paiement`…) pour que le code historique
+- Vues de compatibilité (`credits_products`, `carnet`, `document_paiement`,
+  `alerte_config`, `alerte_log`, `audit_log`) pour que le code historique
   continue de fonctionner sans réécriture lourde.
 
 La migration ne modifie **jamais** les anciennes bases : elle ne fait que lire
@@ -191,6 +190,7 @@ php database/install.php                  # crée les tables manquantes
 php database/migrate_legacy.php --force   # VIDE puis réimporte les anciennes données
 php database/merge_legacy_dumps.php       # AJOUTE seulement ce qui manque (sans rien vider)
 php database/import_gestionmystock.php    # importe l'ancien POS gestionmystock
+php database/migrate_split_tiers.php --force # sépare clients / bénéficiaires / personnes / fournisseurs (base existante)
 php database/backfill_stock_movements.php # reconstruit le grand livre des mouvements
 php database/upgrade.php                  # ajoute les nouveautés sans perte
 php database/doctor.php                   # contrôle tables, vues, admin, logs

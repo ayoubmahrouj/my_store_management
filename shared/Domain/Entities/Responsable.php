@@ -6,8 +6,7 @@ namespace Gos\Domain\Entities;
 /**
  * Responsable — personne interne (propriétaire, gérant, employé).
  *
- * Correspond aux lignes `clients` dont `type = 'PERSONNE'`.
- * La vue historique `personne` pointe désormais sur la même table.
+ * Stocké dans sa propre table `personne` (module Chèques).
  */
 final class Responsable extends Personne
 {

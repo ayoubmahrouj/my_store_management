@@ -8,17 +8,16 @@ use Gos\Domain\Entities\Concerns\ReadOnlyArray;
 use JsonSerializable;
 
 /**
- * Personne (tiers) — classe mère unique de tous les intervenants.
+ * Personne (tiers) — classe mère de tous les intervenants.
  *
- * Toutes les personnes de l'application vivent dans la **même** table
- * `clients` et sont distinguées par la colonne `type` :
+ * Chaque population est stockée dans sa propre table :
  *
- *   - `CLIENT`      → {@see Client}        (et {@see Beneficiaire} côté Chèques)
- *   - `FOURNISSEUR` → {@see Fournisseur}
- *   - `PERSONNE`    → {@see Responsable}   (personnel interne : rôle)
+ *   - {@see Client}       → `clients`      (crédits / ventes)
+ *   - {@see Beneficiaire} → `beneficiaire` (chèques / effets)
+ *   - {@see Responsable}  → `personne`     (personnel interne : rôle)
+ *   - {@see Fournisseur}  → `suppliers`    (module Stock)
  *
- * Ce modèle unique remplace les tables historiques `beneficiaire`, `suppliers`
- * et `personne` (désormais de simples vues sur `clients`).
+ * Aucune table n'est partagée entre deux populations.
  *
  * @implements ArrayAccess<string, mixed>
  */
@@ -42,10 +41,10 @@ abstract class Personne implements ArrayAccess, JsonSerializable
     ) {
     }
 
-    /** Discriminant stocké dans `clients.type`. */
+    /** Type logique du tiers (`client`, `beneficiaire`, `fournisseur`, `personne`). */
     abstract public static function type(): string;
 
-    /** Construit l'entité à partir d'une ligne SQL de la table `clients`. */
+    /** Construit l'entité à partir d'une ligne de sa table. */
     abstract public static function fromRow(array $row): static;
 
     public function id(): int

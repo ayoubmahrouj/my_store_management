@@ -263,7 +263,7 @@ if ($fQuery !== '') {
 $from = ' FROM credit_bons b JOIN clients c ON c.id = b.client_id';
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
-$companies = all("SELECT id, name FROM clients WHERE type = 'CLIENT' AND nature = 'SOCIETE' ORDER BY name");
+$companies = all("SELECT id, name FROM clients WHERE nature = 'SOCIETE' ORDER BY name");
 
 $totals = one(
     "SELECT COUNT(*) AS n,
