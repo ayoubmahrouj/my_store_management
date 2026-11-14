@@ -10,6 +10,38 @@ function e(mixed $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Traduction du module Stock.
+ *
+ * La clé est le libellé français : en français le texte est renvoyé tel quel,
+ * en arabe il est cherché dans lang/ar/*.php (fragments fusionnés une fois par
+ * requête). Les fragments sont indépendants pour rester faciles à maintenir.
+ * Les valeurs dynamiques s'injectent avec des jetons « :nom ».
+ */
+function t(string $text, array $replace = []): string
+{
+    // Les exports (PDF/XLS/CSV) restent en français : le moteur PDF est limité
+    // à Windows-1252 et les pièces comptables doivent rester homogènes.
+    if (sh_locale() === 'ar' && empty($GLOBALS['gos_export_french'])) {
+        static $dict = null;
+        if ($dict === null) {
+            $dict = [];
+            foreach (glob(dirname(__DIR__, 2) . '/lang/ar/*.php') ?: [] as $file) {
+                $part = require $file;
+                if (is_array($part)) {
+                    $dict = array_merge($dict, $part);
+                }
+            }
+        }
+        $text = $dict[$text] ?? $text;
+    }
+
+    foreach ($replace as $key => $value) {
+        $text = str_replace(':' . $key, (string) $value, $text);
+    }
+    return $text;
+}
+
 function url(string $path = '/'): string
 {
     $base = rtrim((string) Config::get('app.base', ''), '/');
@@ -97,11 +129,11 @@ function status_class(string $status): string
 function doc_type_label(string $type): string
 {
     return match ($type) {
-        'entree' => 'Entrée',
-        'sortie' => 'Sortie',
-        'transfert' => 'Transfert',
-        'inventaire' => 'Inventaire',
-        'ouverture' => 'Ouverture',
+        'entree' => t('Entrée'),
+        'sortie' => t('Sortie'),
+        'transfert' => t('Transfert'),
+        'inventaire' => t('Inventaire'),
+        'ouverture' => t('Ouverture'),
         default => ucfirst($type),
     };
 }

@@ -33,7 +33,7 @@ final class ProductApiController
         if ($product === null) {
             return Response::json([
                 'success' => false,
-                'message' => 'Produit introuvable.',
+                'message' => t('Produit introuvable.'),
                 'errors'  => [],
             ], 404);
         }

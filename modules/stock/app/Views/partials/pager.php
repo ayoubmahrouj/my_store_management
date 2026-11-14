@@ -22,19 +22,19 @@ $end = min($pages, $page + $window);
 $firstDisabled = $page <= 1;
 $lastDisabled = $page >= $pages;
 ?>
-<nav class="table-pager" aria-label="Pagination">
+<nav class="table-pager" aria-label="<?= e(t('Pagination')) ?>">
     <span class="pager-info">
-        Page <?= $page ?> / <?= $pages ?>
+        <?= e(t('Page :page / :pages', ['page' => (string) $page, 'pages' => (string) $pages])) ?>
         <span class="pager-sep">·</span>
-        <?= e(number_format((float) $total, 0, ',', ' ')) ?> résultat<?= $total > 1 ? 's' : '' ?>
+        <?= e(number_format((float) $total, 0, ',', ' ')) ?> <?= t($total > 1 ? 'résultats' : 'résultat') ?>
     </span>
     <div class="pager-links">
         <a class="pager-btn<?= $firstDisabled ? ' is-disabled' : '' ?>" href="<?= $firstDisabled ? '#' : e($pageUrl(1)) ?>"
-           <?= $firstDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="Première page" aria-label="Première page">
+           <?= $firstDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="<?= e(t('Première page')) ?>" aria-label="<?= e(t('Première page')) ?>">
             <i class="bi bi-chevron-double-left"></i>
         </a>
         <a class="pager-btn<?= $firstDisabled ? ' is-disabled' : '' ?>" href="<?= $firstDisabled ? '#' : e($pageUrl($page - 1)) ?>"
-           <?= $firstDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="Précédent" aria-label="Précédent">
+           <?= $firstDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="<?= e(t('Précédent')) ?>" aria-label="<?= e(t('Précédent')) ?>">
             <i class="bi bi-chevron-left"></i>
         </a>
 
@@ -54,11 +54,11 @@ $lastDisabled = $page >= $pages;
         <?php endif; ?>
 
         <a class="pager-btn<?= $lastDisabled ? ' is-disabled' : '' ?>" href="<?= $lastDisabled ? '#' : e($pageUrl($page + 1)) ?>"
-           <?= $lastDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="Suivant" aria-label="Suivant">
+           <?= $lastDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="<?= e(t('Suivant')) ?>" aria-label="<?= e(t('Suivant')) ?>">
             <i class="bi bi-chevron-right"></i>
         </a>
         <a class="pager-btn<?= $lastDisabled ? ' is-disabled' : '' ?>" href="<?= $lastDisabled ? '#' : e($pageUrl($pages)) ?>"
-           <?= $lastDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="Dernière page" aria-label="Dernière page">
+           <?= $lastDisabled ? 'aria-disabled="true" tabindex="-1"' : '' ?> title="<?= e(t('Dernière page')) ?>" aria-label="<?= e(t('Dernière page')) ?>">
             <i class="bi bi-chevron-double-right"></i>
         </a>
     </div>

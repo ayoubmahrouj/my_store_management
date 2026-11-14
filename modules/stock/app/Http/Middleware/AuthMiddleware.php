@@ -32,7 +32,7 @@ final class AuthMiddleware
             }
             return Response::json([
                 'success' => false,
-                'message' => 'Authentification requise.',
+                'message' => t('Authentification requise.'),
                 'errors'  => [],
             ], 401);
         };

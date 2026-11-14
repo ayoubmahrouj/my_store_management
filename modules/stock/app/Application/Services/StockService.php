@@ -45,7 +45,7 @@ final class StockService
         int $userId
     ): int {
         if (!in_array($type, ['entree', 'sortie', 'transfert'], true)) {
-            throw new RuntimeException('Type de document invalide.');
+            throw new RuntimeException(t('Type de document invalide.'));
         }
 
         $docDate = $this->validDate($docDate);
@@ -53,10 +53,10 @@ final class StockService
 
         if ($type === 'transfert') {
             if ($destLocationId === null || $destLocationId <= 0) {
-                throw new RuntimeException('Sélectionnez le site de destination.');
+                throw new RuntimeException(t('Sélectionnez le site de destination.'));
             }
             if ($destLocationId === $locationId) {
-                throw new RuntimeException('Le site de destination doit être différent du site source.');
+                throw new RuntimeException(t('Le site de destination doit être différent du site source.'));
             }
             $this->assertLocation($destLocationId);
             $supplierId = null;
@@ -81,7 +81,7 @@ final class StockService
 
         $normalized = $this->normalizeItems($type, $items);
         if ($normalized === []) {
-            throw new RuntimeException('Ajoutez au moins une ligne de produit avec une quantité.');
+            throw new RuntimeException(t('Ajoutez au moins une ligne de produit avec une quantité.'));
         }
 
         $this->pdo->beginTransaction();
@@ -158,19 +158,19 @@ final class StockService
         try {
             $doc = $this->lockDocument($documentId);
             if ($doc['status'] !== 'brouillon') {
-                throw new RuntimeException('Seul un brouillon peut être validé.');
+                throw new RuntimeException(t('Seul un brouillon peut être validé.'));
             }
 
             if ($doc['type'] === 'transfert') {
-                throw new RuntimeException('Utilisez l’action « Expédier » pour un transfert.');
+                throw new RuntimeException(t('Utilisez l’action « Expédier » pour un transfert.'));
             }
             if (!in_array($doc['type'], ['entree', 'sortie', 'ouverture'], true)) {
-                throw new RuntimeException('Ce type de document ne peut pas être validé ici.');
+                throw new RuntimeException(t('Ce type de document ne peut pas être validé ici.'));
             }
 
             $lines = $this->documentLines($documentId);
             if ($lines === []) {
-                throw new RuntimeException('Le document ne contient aucune ligne.');
+                throw new RuntimeException(t('Le document ne contient aucune ligne.'));
             }
 
             if ($doc['type'] === 'entree' || $doc['type'] === 'ouverture') {
@@ -204,15 +204,15 @@ final class StockService
         try {
             $doc = $this->lockDocument($documentId);
             if ($doc['type'] !== 'transfert') {
-                throw new RuntimeException('Ce document n’est pas un transfert.');
+                throw new RuntimeException(t('Ce document n’est pas un transfert.'));
             }
             if ($doc['status'] !== 'brouillon') {
-                throw new RuntimeException('Seul un transfert brouillon peut être expédié.');
+                throw new RuntimeException(t('Seul un transfert brouillon peut être expédié.'));
             }
 
             $lines = $this->documentLines($documentId);
             if ($lines === []) {
-                throw new RuntimeException('Le transfert ne contient aucune ligne.');
+                throw new RuntimeException(t('Le transfert ne contient aucune ligne.'));
             }
 
             $locationId = (int) $doc['location_id'];
@@ -272,15 +272,15 @@ final class StockService
         try {
             $doc = $this->lockDocument($documentId);
             if ($doc['type'] !== 'transfert') {
-                throw new RuntimeException('Ce document n’est pas un transfert.');
+                throw new RuntimeException(t('Ce document n’est pas un transfert.'));
             }
             if ($doc['status'] !== 'expedie') {
-                throw new RuntimeException('Seul un transfert expédié peut être réceptionné.');
+                throw new RuntimeException(t('Seul un transfert expédié peut être réceptionné.'));
             }
 
             $destId = $doc['dest_location_id'] !== null ? (int) $doc['dest_location_id'] : 0;
             if ($destId <= 0) {
-                throw new RuntimeException('Aucun site de destination défini.');
+                throw new RuntimeException(t('Aucun site de destination défini.'));
             }
 
             $lines = $this->documentLines($documentId);
@@ -325,7 +325,7 @@ final class StockService
         try {
             $doc = $this->lockDocument($documentId);
             if ($doc['status'] !== 'brouillon') {
-                throw new RuntimeException('Seul un brouillon peut être annulé.');
+                throw new RuntimeException(t('Seul un brouillon peut être annulé.'));
             }
 
             $this->pdo->prepare(
@@ -396,7 +396,7 @@ final class StockService
         try {
             $session = $this->lockInventorySession($sessionId);
             if (!in_array($session['status'], ['ouvert', 'comptage'], true)) {
-                throw new RuntimeException('Cet inventaire n’est plus modifiable.');
+                throw new RuntimeException(t('Cet inventaire n’est plus modifiable.'));
             }
 
             $stmt = $this->pdo->prepare('SELECT id, qty_theoretical FROM inventory_lines WHERE session_id = :id');
@@ -427,7 +427,7 @@ final class StockService
 
                 $counted = $this->parseNumber($raw);
                 if ($counted < 0) {
-                    throw new RuntimeException('Une quantité comptée ne peut pas être négative.');
+                    throw new RuntimeException(t('Une quantité comptée ne peut pas être négative.'));
                 }
                 $counted = round($counted, 3);
                 $gap = round($counted - (float) $line['qty_theoretical'], 3);
@@ -458,7 +458,7 @@ final class StockService
         try {
             $session = $this->lockInventorySession($sessionId);
             if (!in_array($session['status'], ['ouvert', 'comptage'], true)) {
-                throw new RuntimeException('Cet inventaire n’est plus modifiable.');
+                throw new RuntimeException(t('Cet inventaire n’est plus modifiable.'));
             }
 
             $stmt = $this->pdo->prepare(
@@ -473,7 +473,7 @@ final class StockService
             $lines = $stmt->fetchAll();
 
             if ($lines === []) {
-                throw new RuntimeException('Enregistrez au moins une quantité comptée avant de valider.');
+                throw new RuntimeException(t('Enregistrez au moins une quantité comptée avant de valider.'));
             }
 
             $updateLine = $this->pdo->prepare('UPDATE inventory_lines SET gap = :gap WHERE id = :id');
@@ -528,7 +528,7 @@ final class StockService
         try {
             $session = $this->lockInventorySession($sessionId);
             if (!in_array($session['status'], ['ouvert', 'comptage'], true)) {
-                throw new RuntimeException('Cet inventaire ne peut plus être annulé.');
+                throw new RuntimeException(t('Cet inventaire ne peut plus être annulé.'));
             }
 
             $this->pdo->prepare('UPDATE inventory_sessions SET status = :status WHERE id = :id')
@@ -561,7 +561,7 @@ final class StockService
                 continue;
             }
             if ($qty < 0) {
-                throw new RuntimeException('Une quantité ne peut pas être négative.');
+                throw new RuntimeException(t('Une quantité ne peut pas être négative.'));
             }
             if ($qty <= 0) {
                 continue;
@@ -569,7 +569,7 @@ final class StockService
 
             $product = $this->productRow($productId);
             if ($product === null) {
-                throw new RuntimeException('Un produit sélectionné est introuvable.');
+                throw new RuntimeException(t('Un produit sélectionné est introuvable.'));
             }
 
             $rawCost = trim((string) ($item['unit_cost'] ?? ''));
@@ -587,7 +587,7 @@ final class StockService
             }
 
             if ($unitCost < 0 || $unitPrice < 0) {
-                throw new RuntimeException('Les prix ne peuvent pas être négatifs.');
+                throw new RuntimeException(t('Les prix ne peuvent pas être négatifs.'));
             }
 
             $normalized[] = [
@@ -717,7 +717,7 @@ final class StockService
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException('Document introuvable.');
+            throw new RuntimeException(t('Document introuvable.'));
         }
 
         return $row;
@@ -730,7 +730,7 @@ final class StockService
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException('Inventaire introuvable.');
+            throw new RuntimeException(t('Inventaire introuvable.'));
         }
 
         return $row;
@@ -778,7 +778,7 @@ final class StockService
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw new RuntimeException('Produit introuvable.');
+            throw new RuntimeException(t('Produit introuvable.'));
         }
 
         return $row;
@@ -824,10 +824,11 @@ final class StockService
     private function assertAvailable(array $product, float $available, float $requested): void
     {
         if ($requested > $available + 0.0001) {
-            throw new RuntimeException(
-                'Stock insuffisant pour « ' . (string) $product['designation'] . ' » : disponible '
-                . qty($available) . ', demandé ' . qty($requested) . '.'
-            );
+            throw new RuntimeException(t('Stock insuffisant pour « :product » : disponible :available, demandé :requested.', [
+                'product'   => (string) $product['designation'],
+                'available' => qty($available),
+                'requested' => qty($requested),
+            ]));
         }
     }
 
@@ -871,7 +872,7 @@ final class StockService
         $stmt = $this->pdo->prepare('SELECT id FROM locations WHERE id = :id AND active = 1 LIMIT 1');
         $stmt->execute(['id' => $id]);
         if ($stmt->fetchColumn() === false) {
-            throw new RuntimeException('Sélectionnez un site actif.');
+            throw new RuntimeException(t('Sélectionnez un site actif.'));
         }
     }
 
@@ -880,7 +881,7 @@ final class StockService
         $stmt = $this->pdo->prepare('SELECT id FROM suppliers WHERE id = :id AND active = 1 LIMIT 1');
         $stmt->execute(['id' => $id]);
         if ($stmt->fetchColumn() === false) {
-            throw new RuntimeException('Fournisseur introuvable ou inactif.');
+            throw new RuntimeException(t('Fournisseur introuvable ou inactif.'));
         }
     }
 
@@ -889,7 +890,7 @@ final class StockService
         $date = trim($date);
         $parsed = DateTimeImmutable::createFromFormat('Y-m-d', $date);
         if ($parsed === false || $parsed->format('Y-m-d') !== $date) {
-            throw new RuntimeException('Date du document invalide.');
+            throw new RuntimeException(t('Date du document invalide.'));
         }
 
         return $date;
@@ -909,7 +910,7 @@ final class StockService
         }
         $raw = str_replace([' ', "\u{00A0}", ','], ['', '', '.'], $raw);
         if (!is_numeric($raw)) {
-            throw new RuntimeException('Valeur numérique invalide : « ' . $raw . ' ».');
+            throw new RuntimeException(t('Valeur numérique invalide : « :value ».', ['value' => $raw]));
         }
 
         return (float) $raw;

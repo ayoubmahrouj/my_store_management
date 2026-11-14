@@ -35,7 +35,7 @@ final class DashboardController
         $pending['inventaire'] = $inventoryStats['open'] + $inventoryStats['counting'];
 
         return View::render('dashboard/index', [
-            'title'       => 'Tableau de bord',
+            'title'       => t('Tableau de bord'),
             'stats'       => $stats,
             'locations'   => $locations,
             'topProducts' => $topProducts,

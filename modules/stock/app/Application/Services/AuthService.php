@@ -19,12 +19,12 @@ final class AuthService
         $this->pdo = Database::pdo();
     }
 
-    /** @return array{user: ?User, error: ?string} */
+    /** @return array{user: ?User, error: ?string, code: ?string} */
     public function attempt(string $login, string $password, string $ip, string $userAgent): array
     {
         $login = trim($login);
         if ($login === '' || $password === '') {
-            return ['user' => null, 'error' => 'Veuillez renseigner vos identifiants.'];
+            return ['user' => null, 'error' => t('Veuillez renseigner vos identifiants.'), 'code' => 'missing_credentials'];
         }
 
         $max = (int) Config::get('security.max_login_attempts', 5);
@@ -41,7 +41,11 @@ final class AuthService
         ]);
 
         if ((int) $stmt->fetchColumn() >= $max) {
-            return ['user' => null, 'error' => "Trop de tentatives. Réessayez dans {$lockMinutes} minutes."];
+            return [
+                'user'  => null,
+                'error' => t('Trop de tentatives. Réessayez dans :minutes minutes.', ['minutes' => $lockMinutes]),
+                'code'  => 'throttled',
+            ];
         }
 
         $user = (new PdoUserRepository())->findByLogin($login);
@@ -50,7 +54,7 @@ final class AuthService
         $this->logAttempt($login, $ip, $valid);
 
         if (!$valid || $user === null) {
-            return ['user' => null, 'error' => 'Identifiants incorrects.'];
+            return ['user' => null, 'error' => t('Identifiants incorrects.'), 'code' => 'invalid_credentials'];
         }
 
         if (password_needs_rehash($user->passwordHash(), PASSWORD_DEFAULT)) {
@@ -60,7 +64,7 @@ final class AuthService
         Auth::login($user);
         $this->audit($user->id(), 'login', 'user', $user->id(), $ip, $userAgent);
 
-        return ['user' => $user, 'error' => null];
+        return ['user' => $user, 'error' => null, 'code' => null];
     }
 
     private function logAttempt(string $login, string $ip, bool $success): void

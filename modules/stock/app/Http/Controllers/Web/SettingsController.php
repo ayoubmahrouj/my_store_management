@@ -17,7 +17,7 @@ final class SettingsController
         $settings = new PdoSettingsRepository();
 
         return View::render('settings/index', [
-            'title'    => 'Paramètres',
+            'title'    => t('Paramètres'),
             'settings' => $settings->all(),
             'stats'    => (new PdoProductRepository())->stats(),
         ]);
@@ -30,10 +30,10 @@ final class SettingsController
             $currency = mb_strtoupper(trim((string) $request->input('currency', 'MAD')));
 
             if ($company === '') {
-                throw new RuntimeException('Le nom de l’entreprise est obligatoire.');
+                throw new RuntimeException(t('Le nom de l’entreprise est obligatoire.'));
             }
             if ($currency === '') {
-                throw new RuntimeException('La devise est obligatoire.');
+                throw new RuntimeException(t('La devise est obligatoire.'));
             }
 
             (new PdoSettingsRepository())->setMany([
@@ -43,7 +43,7 @@ final class SettingsController
                 'cump_method'          => 'global',
             ]);
 
-            flash('success', 'Paramètres enregistrés.');
+            flash('success', t('Paramètres enregistrés.'));
         } catch (RuntimeException $e) {
             flash('error', $e->getMessage());
         }

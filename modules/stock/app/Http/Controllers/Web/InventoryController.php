@@ -21,7 +21,7 @@ final class InventoryController
         $repo = new PdoInventoryRepository();
 
         return View::render('inventory/index', [
-            'title'     => 'Inventaires',
+            'title'     => t('Inventaires'),
             'sessions'  => $repo->search($filters),
             'stats'     => $repo->stats(),
             'locations' => (new PdoReferenceRepository())->locations(true),
@@ -31,6 +31,7 @@ final class InventoryController
 
     public function export(Request $request): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $filters = $this->filters($request);
         $repo = new PdoInventoryRepository();
         $sessions = $repo->search($filters);
@@ -59,7 +60,7 @@ final class InventoryController
                         $full->numero(),
                         date('d/m/Y H:i', strtotime($full->startedAt())),
                         $full->locationName(),
-                        $full->statusLabel(),
+                        t($full->statusLabel()),
                         $line->sku(),
                         $line->designation(),
                         $line->unit(),
@@ -74,28 +75,28 @@ final class InventoryController
 
             $document = new ExportDocument(
                 filename: 'inventaires-lignes-' . date('Ymd-Hi'),
-                title: 'Détail des inventaires',
-                subtitle: 'Écarts constatés ligne par ligne, avec quantités théoriques, comptées et valorisation.',
+                title: t('Détail des inventaires'),
+                subtitle: t('Écarts constatés ligne par ligne, avec quantités théoriques, comptées et valorisation.'),
                 meta: $meta,
                 summary: [
-                    ['label' => 'Lignes', 'value' => (string) count($rows)],
-                    ['label' => 'Écart quantités', 'value' => qty($totalGap)],
-                    ['label' => 'Écart valorisé', 'value' => money($totalGapValue)],
-                    ['label' => 'Sessions', 'value' => (string) count($sessions)],
+                    ['label' => t('Lignes'), 'value' => (string) count($rows)],
+                    ['label' => t('Écart quantités'), 'value' => qty($totalGap)],
+                    ['label' => t('Écart valorisé'), 'value' => money($totalGapValue)],
+                    ['label' => t('Sessions'), 'value' => (string) count($sessions)],
                 ],
                 columns: [
-                    ['label' => 'Inventaire', 'width' => 1.0],
-                    ['label' => 'Date', 'width' => 1.0],
-                    ['label' => 'Site', 'width' => 1.3],
-                    ['label' => 'Statut', 'width' => 0.8, 'align' => 'center'],
+                    ['label' => t('Inventaire'), 'width' => 1.0],
+                    ['label' => t('Date'), 'width' => 1.0],
+                    ['label' => t('Site'), 'width' => 1.3],
+                    ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center'],
                     ['label' => 'SKU', 'width' => 0.9],
-                    ['label' => 'Produit', 'width' => 2.2],
-                    ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                    ['label' => 'Théorique', 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Compté', 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Écart', 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Coût unitaire (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Écart valorisé (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Produit'), 'width' => 2.2],
+                    ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                    ['label' => t('Théorique'), 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Compté'), 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Écart'), 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Coût unitaire (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Écart valorisé (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
                 ],
                 rows: $rows,
                 totals: [null, null, null, null, null, null, null, $totalTheoretical, $totalCounted, $totalGap, null, $totalGapValue],
@@ -117,7 +118,7 @@ final class InventoryController
                 date('d/m/Y H:i', strtotime($session->startedAt())),
                 $session->locationName(),
                 $session->startedByName(),
-                $session->statusLabel(),
+                t($session->statusLabel()),
                 $session->countedLineCount(),
                 $session->lineCount(),
                 $session->gapValueTotal(),
@@ -128,26 +129,26 @@ final class InventoryController
 
         $document = new ExportDocument(
             filename: 'inventaires-' . date('Ymd-Hi'),
-            title: 'Registre des inventaires',
-            subtitle: 'Sessions de contrôle physique, avancement du comptage et écart valorisé.',
+            title: t('Registre des inventaires'),
+            subtitle: t('Sessions de contrôle physique, avancement du comptage et écart valorisé.'),
             meta: $meta,
             summary: [
-                ['label' => 'Sessions', 'value' => (string) count($sessions)],
-                ['label' => 'Lignes', 'value' => (string) $totalLines],
-                ['label' => 'Écart valorisé', 'value' => money($totalGap)],
-                ['label' => 'Validés', 'value' => (string) count(array_filter($sessions, static fn ($session): bool => $session->isValidated()))],
+                ['label' => t('Sessions'), 'value' => (string) count($sessions)],
+                ['label' => t('Lignes'), 'value' => (string) $totalLines],
+                ['label' => t('Écart valorisé'), 'value' => money($totalGap)],
+                ['label' => t('Validés'), 'value' => (string) count(array_filter($sessions, static fn ($session): bool => $session->isValidated()))],
             ],
             columns: [
-                ['label' => 'Inventaire', 'width' => 1.1],
-                ['label' => 'Date', 'width' => 1.0],
-                ['label' => 'Site', 'width' => 1.5],
-                ['label' => 'Démarré par', 'width' => 1.1],
-                ['label' => 'Statut', 'width' => 0.8, 'align' => 'center'],
-                ['label' => 'Comptés', 'width' => 0.65, 'align' => 'right', 'type' => 'number'],
-                ['label' => 'Lignes', 'width' => 0.65, 'align' => 'right', 'type' => 'number'],
-                ['label' => 'Écart valorisé (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Validé par', 'width' => 1.1],
-                ['label' => 'Validé le', 'width' => 1.1],
+                ['label' => t('Inventaire'), 'width' => 1.1],
+                ['label' => t('Date'), 'width' => 1.0],
+                ['label' => t('Site'), 'width' => 1.5],
+                ['label' => t('Démarré par'), 'width' => 1.1],
+                ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center'],
+                ['label' => t('Comptés'), 'width' => 0.65, 'align' => 'right', 'type' => 'number'],
+                ['label' => t('Lignes'), 'width' => 0.65, 'align' => 'right', 'type' => 'number'],
+                ['label' => t('Écart valorisé (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Validé par'), 'width' => 1.1],
+                ['label' => t('Validé le'), 'width' => 1.1],
             ],
             rows: $rows,
             totals: [null, null, null, null, null, null, $totalLines, $totalGap, null, null],
@@ -160,9 +161,10 @@ final class InventoryController
 
     public function exportDocument(Request $request, string $id): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $session = (new PdoInventoryRepository())->find((int) $id);
         if ($session === null) {
-            return View::render('errors/404', ['title' => 'Inventaire introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Inventaire introuvable')])->withStatus(404);
         }
 
         $rows = [];
@@ -189,36 +191,36 @@ final class InventoryController
         }
 
         $meta = [
-            'Inventaire : ' . $session->numero(),
-            'Date : ' . date('d/m/Y H:i', strtotime($session->startedAt())),
-            'Site : ' . $session->locationName(),
-            'Statut : ' . $session->statusLabel(),
-            'Démarré par : ' . $session->startedByName(),
+            t('Inventaire : :value', ['value' => $session->numero()]),
+            t('Date : :value', ['value' => date('d/m/Y H:i', strtotime($session->startedAt()))]),
+            t('Site : :label', ['label' => $session->locationName()]),
+            t('Statut : :value', ['value' => t($session->statusLabel())]),
+            t('Démarré par : :value', ['value' => $session->startedByName()]),
         ];
         if ($session->notes() !== null && $session->notes() !== '') {
-            $meta[] = 'Notes : ' . $session->notes();
+            $meta[] = t('Notes : :value', ['value' => $session->notes()]);
         }
 
         $document = new ExportDocument(
             filename: 'inventaire-' . $session->numero() . '-' . date('Ymd-Hi'),
-            title: 'Inventaire · ' . $session->numero(),
-            subtitle: 'Comptage physique, écarts constatés et valorisation de l’ajustement.',
+            title: t('Inventaire') . ' · ' . $session->numero(),
+            subtitle: t('Comptage physique, écarts constatés et valorisation de l’ajustement.'),
             meta: $meta,
             summary: [
-                ['label' => 'Lignes', 'value' => (string) count($rows)],
-                ['label' => 'Comptées', 'value' => (string) $session->countedLineCount()],
-                ['label' => 'Écart quantités', 'value' => qty($totalGap)],
-                ['label' => 'Écart valorisé', 'value' => money($totalGapValue)],
+                ['label' => t('Lignes'), 'value' => (string) count($rows)],
+                ['label' => t('Comptées'), 'value' => (string) $session->countedLineCount()],
+                ['label' => t('Écart quantités'), 'value' => qty($totalGap)],
+                ['label' => t('Écart valorisé'), 'value' => money($totalGapValue)],
             ],
             columns: [
                 ['label' => 'SKU', 'width' => 0.9],
-                ['label' => 'Produit', 'width' => 2.6],
-                ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                ['label' => 'Théorique', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Compté', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Écart', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Coût unitaire (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Écart valorisé (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Produit'), 'width' => 2.6],
+                ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                ['label' => t('Théorique'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Compté'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Écart'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Coût unitaire (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Écart valorisé (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
             ],
             rows: $rows,
             totals: [null, null, null, $totalTheoretical, $totalCounted, $totalGap, null, $totalGapValue],
@@ -245,26 +247,26 @@ final class InventoryController
     private function meta(array $filters): array
     {
         $locations = (new PdoReferenceRepository())->locations(true);
-        $meta = ['Site : ' . 'Tous les sites'];
+        $meta = [t('Site : :label', ['label' => t('Tous les sites')])];
         if ((int) $filters['location_id'] > 0) {
             foreach ($locations as $location) {
                 if ($location->id() === (int) $filters['location_id']) {
-                    $meta[0] = 'Site : ' . $location->name();
+                    $meta[0] = t('Site : :label', ['label' => $location->name()]);
                     break;
                 }
             }
         }
         if ((string) $filters['status'] !== '') {
-            $meta[] = 'Statut : ' . match ((string) $filters['status']) {
-                'ouvert' => 'Ouvert',
-                'comptage' => 'Comptage',
-                'valide' => 'Validé',
-                'annule' => 'Annulé',
+            $meta[] = t('Statut : :value', ['value' => match ((string) $filters['status']) {
+                'ouvert' => t('Ouvert'),
+                'comptage' => t('Comptage'),
+                'valide' => t('Validé'),
+                'annule' => t('Annulé'),
                 default => ucfirst((string) $filters['status']),
-            };
+            }]);
         }
         if ((string) $filters['q'] !== '') {
-            $meta[] = 'Recherche : « ' . (string) $filters['q'] . ' »';
+            $meta[] = t('Recherche : « :q »', ['q' => (string) $filters['q']]);
         }
 
         return $meta;
@@ -273,7 +275,7 @@ final class InventoryController
     public function create(Request $request): Response
     {
         return View::render('inventory/form', [
-            'title'     => 'Nouvel inventaire',
+            'title'     => t('Nouvel inventaire'),
             'locations' => (new PdoReferenceRepository())->locations(true),
             'old'       => [],
             'errors'    => [],
@@ -288,11 +290,11 @@ final class InventoryController
                 $request->input('notes') !== null ? (string) $request->input('notes') : null,
                 Auth::id(),
             );
-            flash('success', 'Inventaire créé. Saisissez les quantités comptées puis validez.');
+            flash('success', t('Inventaire créé. Saisissez les quantités comptées puis validez.'));
             return Response::redirect(url('/inventaire/' . $id));
         } catch (Throwable $e) {
             return View::render('inventory/form', [
-                'title'     => 'Nouvel inventaire',
+                'title'     => t('Nouvel inventaire'),
                 'locations' => (new PdoReferenceRepository())->locations(true),
                 'old'       => $request->all(),
                 'errors'    => [$e->getMessage()],
@@ -304,7 +306,7 @@ final class InventoryController
     {
         $session = (new PdoInventoryRepository())->find((int) $id);
         if ($session === null) {
-            return View::render('errors/404', ['title' => 'Inventaire introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Inventaire introuvable')])->withStatus(404);
         }
 
         return View::render('inventory/show', [
@@ -322,7 +324,7 @@ final class InventoryController
 
         try {
             (new StockService())->saveInventoryCounts((int) $id, $counts, Auth::id());
-            flash('success', 'Comptage enregistré. Vérifiez les écarts puis validez l’inventaire.');
+            flash('success', t('Comptage enregistré. Vérifiez les écarts puis validez l’inventaire.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -334,7 +336,7 @@ final class InventoryController
     {
         try {
             (new StockService())->validateInventory((int) $id, Auth::id());
-            flash('success', 'Inventaire validé : les écarts ont été appliqués au stock.');
+            flash('success', t('Inventaire validé : les écarts ont été appliqués au stock.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -346,7 +348,7 @@ final class InventoryController
     {
         try {
             (new StockService())->cancelInventory((int) $id, Auth::id());
-            flash('success', 'Inventaire annulé.');
+            flash('success', t('Inventaire annulé.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }

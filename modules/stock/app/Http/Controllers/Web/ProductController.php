@@ -34,7 +34,7 @@ final class ProductController
         ]);
 
         return View::render('products/index', [
-            'title'        => 'Produits',
+            'title'        => t('Produits'),
             'term'         => $filters['q'],
             'products'     => $products,
             'summary'      => $summary,
@@ -63,8 +63,8 @@ final class ProductController
         $rows = [];
         foreach ($products as $product) {
             $status = !$product->isActive()
-                ? 'Inactif'
-                : ($product->isOutOfStock() ? 'Rupture' : ($product->isLowStock() ? 'Seuil bas' : 'En stock'));
+                ? t('Inactif')
+                : ($product->isOutOfStock() ? t('Rupture') : ($product->isLowStock() ? t('Seuil bas') : t('En stock')));
             $totalQty += $product->quantity();
             $totalValue += $product->stockValue();
             if ($product->isLowStock() || $product->isOutOfStock()) {
@@ -89,28 +89,28 @@ final class ProductController
 
         $document = new \App\Infrastructure\Export\ExportDocument(
             filename: 'produits-' . date('Ymd-Hi'),
-            title: 'Référentiel produits & positionnement',
-            subtitle: 'Fiche consolidée des produits, du CUMP, des seuils et du stock par site.',
+            title: t('Référentiel produits & positionnement'),
+            subtitle: t('Fiche consolidée des produits, du CUMP, des seuils et du stock par site.'),
             meta: $this->meta($filters, $refs),
             summary: [
-                ['label' => 'Produits', 'value' => (string) count($products)],
-                ['label' => 'Quantité totale', 'value' => qty($totalQty)],
-                ['label' => 'Capital stock', 'value' => money($totalValue)],
-                ['label' => 'Alertes seuil', 'value' => (string) $low],
+                ['label' => t('Produits'), 'value' => (string) count($products)],
+                ['label' => t('Quantité totale'), 'value' => qty($totalQty)],
+                ['label' => t('Capital stock'), 'value' => money($totalValue)],
+                ['label' => t('Alertes seuil'), 'value' => (string) $low],
             ],
             columns: [
                 ['label' => 'SKU', 'width' => 0.9],
-                ['label' => 'Désignation', 'width' => 2.4],
-                ['label' => 'Marque', 'width' => 1.1],
-                ['label' => 'Catégorie', 'width' => 1.2],
-                ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                ['label' => 'Statut', 'width' => 0.8, 'align' => 'center'],
-                ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'CUMP (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Valeur stock (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Prix vente (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Seuil min', 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Positionnement', 'width' => 1.9],
+                ['label' => t('Désignation'), 'width' => 2.4],
+                ['label' => t('Marque'), 'width' => 1.1],
+                ['label' => t('Catégorie'), 'width' => 1.2],
+                ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center'],
+                ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('CUMP (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Valeur stock (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Prix vente (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Seuil min'), 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Positionnement'), 'width' => 1.9],
             ],
             rows: $rows,
             totals: [null, null, null, null, null, null, $totalQty, null, $totalValue, null, null, null],
@@ -155,12 +155,12 @@ final class ProductController
     private function meta(array $filters, PdoReferenceRepository $refs): array
     {
         $meta = [];
-        $meta[] = 'Site : ' . $this->locationLabel($refs->locations(true), (int) $filters['location_id']);
+        $meta[] = t('Site : :site', ['site' => $this->locationLabel($refs->locations(true), (int) $filters['location_id'])]);
         if ((int) $filters['category_id'] > 0) {
-            $meta[] = 'Catégorie : ' . $this->nameLabel($refs->categories(true), (int) $filters['category_id']);
+            $meta[] = t('Catégorie : :category', ['category' => $this->nameLabel($refs->categories(true), (int) $filters['category_id'])]);
         }
         if ((int) $filters['brand_id'] > 0) {
-            $meta[] = 'Marque : ' . $this->nameLabel($refs->brands(true), (int) $filters['brand_id']);
+            $meta[] = t('Marque : :brand', ['brand' => $this->nameLabel($refs->brands(true), (int) $filters['brand_id'])]);
         }
         if ((int) $filters['unit_id'] > 0) {
             $unit = '#' . (int) $filters['unit_id'];
@@ -170,27 +170,27 @@ final class ProductController
                     break;
                 }
             }
-            $meta[] = 'Unité : ' . $unit;
+            $meta[] = t('Unité : :unit', ['unit' => $unit]);
         }
         if ((string) $filters['status'] !== '') {
-            $meta[] = 'Statut : ' . match ((string) $filters['status']) {
-                'out' => 'Rupture',
-                'low' => 'Seuil bas',
-                'ok' => 'En stock',
-                default => 'Tous',
-            };
+            $meta[] = t('Statut : :status', ['status' => match ((string) $filters['status']) {
+                'out' => t('Rupture'),
+                'low' => t('Seuil bas'),
+                'ok' => t('En stock'),
+                default => t('Tous'),
+            }]);
         }
         if ((string) $filters['q'] !== '') {
-            $meta[] = 'Recherche : « ' . (string) $filters['q'] . ' »';
+            $meta[] = t('Recherche : « :term »', ['term' => (string) $filters['q']]);
         }
         if ((string) $filters['min_qty'] !== '' || (string) $filters['max_qty'] !== '') {
-            $meta[] = 'Quantité : ' . $this->rangeLabel((string) $filters['min_qty'], (string) $filters['max_qty']);
+            $meta[] = t('Quantité : :range', ['range' => $this->rangeLabel((string) $filters['min_qty'], (string) $filters['max_qty'])]);
         }
         if ((string) $filters['min_value'] !== '' || (string) $filters['max_value'] !== '') {
-            $meta[] = 'Valeur : ' . $this->rangeLabel((string) $filters['min_value'], (string) $filters['max_value'], currency());
+            $meta[] = t('Valeur : :range', ['range' => $this->rangeLabel((string) $filters['min_value'], (string) $filters['max_value'], currency())]);
         }
         if ($filters['show_inactive']) {
-            $meta[] = 'Produits inactifs inclus';
+            $meta[] = t('Produits inactifs inclus');
         }
 
         return $meta;
@@ -200,7 +200,7 @@ final class ProductController
     private function locationLabel(array $items, int $id): string
     {
         if ($id <= 0) {
-            return 'Tous les sites';
+            return t('Tous les sites');
         }
         foreach ($items as $item) {
             if ($item->id() === $id) {
@@ -208,7 +208,7 @@ final class ProductController
             }
         }
 
-        return 'Site #' . $id;
+        return t('Site #:id', ['id' => $id]);
     }
 
     /** @param array<int, \App\Domain\Entities\Category>|array<int, \Gos\Domain\Entities\Marque> $items */
@@ -227,13 +227,13 @@ final class ProductController
     {
         $suffix = $suffix !== '' ? ' ' . $suffix : '';
         if ($min !== '' && $max !== '') {
-            return 'de ' . $min . ' à ' . $max . $suffix;
+            return t('de :min à :max', ['min' => $min, 'max' => $max]) . $suffix;
         }
         if ($min !== '') {
-            return '≥ ' . $min . $suffix;
+            return t('≥ :min', ['min' => $min]) . $suffix;
         }
 
-        return '≤ ' . $max . $suffix;
+        return t('≤ :max', ['max' => $max]) . $suffix;
     }
 
     public function create(Request $request): Response
@@ -246,7 +246,7 @@ final class ProductController
         try {
             $data = $this->validated($request);
             (new PdoProductRepository())->create($data);
-            flash('success', 'Produit créé. Enregistrez une entrée de stock pour l’approvisionner.');
+            flash('success', t('Produit créé. Enregistrez une entrée de stock pour l’approvisionner.'));
             return Response::redirect(url('/produits'));
         } catch (Throwable $e) {
             return $this->formView(null, $request->all(), [$e->getMessage()]);
@@ -257,7 +257,7 @@ final class ProductController
     {
         $product = (new PdoProductRepository())->findRaw((int) $id);
         if ($product === null) {
-            return View::render('errors/404', ['title' => 'Produit introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Produit introuvable')])->withStatus(404);
         }
 
         return $this->formView($product, $product, []);
@@ -268,13 +268,13 @@ final class ProductController
         $repo = new PdoProductRepository();
         $product = $repo->findRaw((int) $id);
         if ($product === null) {
-            return View::render('errors/404', ['title' => 'Produit introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Produit introuvable')])->withStatus(404);
         }
 
         try {
             $data = $this->validated($request);
             $repo->update((int) $id, $data);
-            flash('success', 'Produit mis à jour.');
+            flash('success', t('Produit mis à jour.'));
             return Response::redirect(url('/produits'));
         } catch (Throwable $e) {
             return $this->formView($product, $request->all(), [$e->getMessage()]);
@@ -285,7 +285,7 @@ final class ProductController
     {
         try {
             (new PdoProductRepository())->toggle((int) $id);
-            flash('success', 'Statut du produit modifié.');
+            flash('success', t('Statut du produit modifié.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -303,7 +303,7 @@ final class ProductController
         $refs = new PdoReferenceRepository();
 
         return View::render('products/form', [
-            'title'      => $product === null ? 'Nouveau produit' : 'Modifier le produit',
+            'title'      => $product === null ? t('Nouveau produit') : t('Modifier le produit'),
             'product'    => $product,
             'old'        => $old,
             'errors'     => $errors,
@@ -330,21 +330,21 @@ final class ProductController
         ];
 
         if ($data['sku'] === '') {
-            throw new RuntimeException('Le SKU est obligatoire.');
+            throw new RuntimeException(t('Le SKU est obligatoire.'));
         }
         if ($data['designation'] === '') {
-            throw new RuntimeException('La désignation est obligatoire.');
+            throw new RuntimeException(t('La désignation est obligatoire.'));
         }
 
         $refs = new PdoReferenceRepository();
         if (!$refs->exists('brand', $data['brand_id'])) {
-            throw new RuntimeException('Sélectionnez une marque active.');
+            throw new RuntimeException(t('Sélectionnez une marque active.'));
         }
         if (!$refs->exists('category', $data['category_id'])) {
-            throw new RuntimeException('Sélectionnez une catégorie active.');
+            throw new RuntimeException(t('Sélectionnez une catégorie active.'));
         }
         if (!$refs->exists('unit', $data['unit_id'])) {
-            throw new RuntimeException('Sélectionnez une unité.');
+            throw new RuntimeException(t('Sélectionnez une unité.'));
         }
 
         return $data;
@@ -358,7 +358,7 @@ final class ProductController
         }
         $raw = str_replace([' ', "\u{00A0}", ','], ['', '', '.'], $raw);
         if (!is_numeric($raw) || (float) $raw < 0) {
-            throw new RuntimeException('Les valeurs numériques doivent être positives.');
+            throw new RuntimeException(t('Les valeurs numériques doivent être positives.'));
         }
 
         return (float) $raw;

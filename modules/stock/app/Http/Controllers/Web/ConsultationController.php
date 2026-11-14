@@ -28,7 +28,7 @@ final class ConsultationController
         ]);
 
         return View::render('consultation/index', [
-            'title'      => 'Consultation',
+            'title'      => t('Consultation'),
             'rows'       => $rows,
             'page'       => $page,
             'pages'      => $pages,
@@ -51,6 +51,7 @@ final class ConsultationController
 
     public function export(Request $request): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $filters = $this->filters($request);
         $rows = (new PdoProductRepository())->consultation($filters);
 
@@ -111,31 +112,31 @@ final class ConsultationController
 
         $document = new ExportDocument(
             filename: 'consultation-stock-' . date('Ymd-Hi'),
-            title: 'Consultation du stock',
-            subtitle: 'Positionnement par produit, coût moyen pondéré (CUMP) et valorisation du stock.',
+            title: t('Consultation du stock'),
+            subtitle: t('Positionnement par produit, coût moyen pondéré (CUMP) et valorisation du stock.'),
             meta: $this->meta($filters, $references),
             summary: [
-                ['label' => 'Produits', 'value' => (string) count($rows)],
-                ['label' => 'Quantité totale', 'value' => qty($quantity)],
-                ['label' => 'Capital stock', 'value' => money($value)],
-                ['label' => 'Valeur potentielle', 'value' => money($saleValue)],
-                ['label' => 'Alertes seuil', 'value' => (string) $alerts],
+                ['label' => t('Produits'), 'value' => (string) count($rows)],
+                ['label' => t('Quantité totale'), 'value' => qty($quantity)],
+                ['label' => t('Capital stock'), 'value' => money($value)],
+                ['label' => t('Valeur potentielle'), 'value' => money($saleValue)],
+                ['label' => t('Alertes seuil'), 'value' => (string) $alerts],
             ],
             columns: [
                 ['label' => 'SKU', 'width' => 0.9, 'type' => 'text'],
-                ['label' => 'Désignation', 'width' => 2.4, 'type' => 'text'],
-                ['label' => 'Marque', 'width' => 1.0, 'type' => 'text'],
-                ['label' => 'Catégorie', 'width' => 1.1, 'type' => 'text'],
-                ['label' => 'Unité', 'width' => 0.6, 'align' => 'center', 'type' => 'text'],
-                ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'CUMP (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Valeur stock (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Prix vente (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Valeur potentielle (' . currency() . ')', 'width' => 1.15, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Marge potentielle (' . currency() . ')', 'width' => 1.15, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Seuil min', 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Positionnement', 'width' => 1.7, 'type' => 'text'],
-                ['label' => 'Statut', 'width' => 0.8, 'align' => 'center', 'type' => 'text'],
+                ['label' => t('Désignation'), 'width' => 2.4, 'type' => 'text'],
+                ['label' => t('Marque'), 'width' => 1.0, 'type' => 'text'],
+                ['label' => t('Catégorie'), 'width' => 1.1, 'type' => 'text'],
+                ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center', 'type' => 'text'],
+                ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('CUMP (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Valeur stock (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Prix vente (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Valeur potentielle (:currency)', ['currency' => currency()]), 'width' => 1.15, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Marge potentielle (:currency)', ['currency' => currency()]), 'width' => 1.15, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Seuil min'), 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Positionnement'), 'width' => 1.7, 'type' => 'text'],
+                ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center', 'type' => 'text'],
             ],
             rows: $dataRows,
             totals: [
@@ -188,13 +189,13 @@ final class ConsultationController
     private function statusLabel(float $quantity, float $minStock): string
     {
         if ($quantity <= 0) {
-            return 'Rupture';
+            return t('Rupture');
         }
         if ($quantity <= $minStock) {
-            return 'Seuil bas';
+            return t('Seuil bas');
         }
 
-        return 'En stock';
+        return t('En stock');
     }
 
     /** @param array<string, mixed> $filters
@@ -204,45 +205,45 @@ final class ConsultationController
     private function meta(array $filters, array $references): array
     {
         $meta = [];
-        $meta[] = 'Site : ' . $this->locationLabel($references['locations'], (int) $filters['location_id']);
+        $meta[] = t('Site : :label', ['label' => $this->locationLabel($references['locations'], (int) $filters['location_id'])]);
         if ((int) $filters['category_id'] > 0) {
-            $meta[] = 'Catégorie : ' . $this->namedLabel($references['categories'], (int) $filters['category_id']);
+            $meta[] = t('Catégorie : :label', ['label' => $this->namedLabel($references['categories'], (int) $filters['category_id'])]);
         }
         if ((int) $filters['brand_id'] > 0) {
-            $meta[] = 'Marque : ' . $this->namedLabel($references['brands'], (int) $filters['brand_id']);
+            $meta[] = t('Marque : :label', ['label' => $this->namedLabel($references['brands'], (int) $filters['brand_id'])]);
         }
         if ((int) $filters['unit_id'] > 0) {
-            $meta[] = 'Unité : ' . $this->unitLabel($references['units'], (int) $filters['unit_id']);
+            $meta[] = t('Unité : :label', ['label' => $this->unitLabel($references['units'], (int) $filters['unit_id'])]);
         }
         if ((string) $filters['status'] !== '') {
-            $meta[] = 'Statut : ' . match ((string) $filters['status']) {
-                'out' => 'Rupture',
-                'low' => 'Seuil bas',
-                'ok' => 'En stock',
-                default => 'Tous',
-            };
+            $meta[] = t('Statut : :value', ['value' => match ((string) $filters['status']) {
+                'out' => t('Rupture'),
+                'low' => t('Seuil bas'),
+                'ok' => t('En stock'),
+                default => t('Tous'),
+            }]);
         }
         if ((string) $filters['q'] !== '') {
-            $meta[] = 'Recherche : « ' . (string) $filters['q'] . ' »';
+            $meta[] = t('Recherche : « :q »', ['q' => (string) $filters['q']]);
         }
         if ((string) $filters['min_qty'] !== '' || (string) $filters['max_qty'] !== '') {
-            $meta[] = 'Quantité : ' . $this->rangeLabel((string) $filters['min_qty'], (string) $filters['max_qty']);
+            $meta[] = t('Quantité : :label', ['label' => $this->rangeLabel((string) $filters['min_qty'], (string) $filters['max_qty'])]);
         }
         if ((string) $filters['min_value'] !== '' || (string) $filters['max_value'] !== '') {
-            $meta[] = 'Valeur : ' . $this->rangeLabel((string) $filters['min_value'], (string) $filters['max_value'], currency());
+            $meta[] = t('Valeur : :label', ['label' => $this->rangeLabel((string) $filters['min_value'], (string) $filters['max_value'], currency())]);
         }
         if ((string) $filters['min_margin'] !== '' || (string) $filters['max_margin'] !== '') {
-            $meta[] = 'Marge : ' . $this->rangeLabel((string) $filters['min_margin'], (string) $filters['max_margin'], currency());
+            $meta[] = t('Marge : :label', ['label' => $this->rangeLabel((string) $filters['min_margin'], (string) $filters['max_margin'], currency())]);
         }
-        $meta[] = 'Tri : ' . match ((string) $filters['sort']) {
-            'name' => 'Désignation',
-            'qty_desc' => 'Quantité décroissante',
-            'qty_asc' => 'Quantité croissante',
-            'value_asc' => 'Valeur croissante',
-            'low' => 'Seuil le plus bas',
-            'margin' => 'Marge potentielle',
-            default => 'Valeur décroissante',
-        };
+        $meta[] = t('Tri : :label', ['label' => match ((string) $filters['sort']) {
+            'name' => t('Désignation'),
+            'qty_desc' => t('Quantité décroissante'),
+            'qty_asc' => t('Quantité croissante'),
+            'value_asc' => t('Valeur croissante'),
+            'low' => t('Seuil le plus bas'),
+            'margin' => t('Marge potentielle'),
+            default => t('Valeur décroissante'),
+        }]);
 
         return $meta;
     }
@@ -251,7 +252,7 @@ final class ConsultationController
     private function locationLabel(array $items, int $id): string
     {
         if ($id <= 0) {
-            return 'Tous les sites';
+            return t('Tous les sites');
         }
         foreach ($items as $item) {
             if ($item->id() === $id) {
@@ -259,7 +260,7 @@ final class ConsultationController
             }
         }
 
-        return 'Site #' . $id;
+        return t('Site #:id', ['id' => $id]);
     }
 
     /** @param array<int, \App\Domain\Entities\Category>|array<int, \Gos\Domain\Entities\Marque> $items */
@@ -290,12 +291,12 @@ final class ConsultationController
     {
         $suffix = $suffix !== '' ? ' ' . $suffix : '';
         if ($min !== '' && $max !== '') {
-            return 'de ' . $min . ' à ' . $max . $suffix;
+            return t('de :min à :max', ['min' => $min, 'max' => $max]) . $suffix;
         }
         if ($min !== '') {
-            return '≥ ' . $min . $suffix;
+            return t('≥ :min', ['min' => $min]) . $suffix;
         }
 
-        return '≤ ' . $max . $suffix;
+        return t('≤ :max', ['max' => $max]) . $suffix;
     }
 }

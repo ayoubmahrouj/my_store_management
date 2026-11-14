@@ -25,7 +25,7 @@ final class TransferController extends DocumentController
     {
         try {
             (new StockService())->shipTransfer((int) $id, Auth::id());
-            flash('success', 'Transfert expédié : le stock source a été diminué.');
+            flash('success', t('Transfert expédié : le stock source a été diminué.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -37,7 +37,7 @@ final class TransferController extends DocumentController
     {
         try {
             (new StockService())->receiveTransfer((int) $id, Auth::id());
-            flash('success', 'Transfert réceptionné : le stock destination a été augmenté.');
+            flash('success', t('Transfert réceptionné : le stock destination a été augmenté.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }

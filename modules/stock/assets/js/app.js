@@ -1,19 +1,32 @@
 (function () {
     'use strict';
 
+    // Traductions injectées par le layout (window.GOS_I18N). Repli français.
+    var I18N = window.GOS_I18N || {};
+    var INTL = I18N.intl || 'fr-FR';
+
+    function tr(key, fallback) {
+        return I18N[key] || fallback;
+    }
+
+    function loadingHtml() {
+        return '<div class="quick-loading"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>' +
+            tr('loadingForm', 'Chargement du formulaire…') + '</span></div>';
+    }
+
     function toNumber(value) {
         var number = parseFloat(String(value == null ? '' : value).replace(',', '.'));
         return Number.isFinite(number) ? number : 0;
     }
 
     function formatQty(value) {
-        return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 }).format(toNumber(value));
+        return new Intl.NumberFormat(INTL, { maximumFractionDigits: 3 }).format(toNumber(value));
     }
 
-    var currency = (document.body && document.body.getAttribute('data-currency')) || 'MAD';
+    var currency = I18N.currency || (document.body && document.body.getAttribute('data-currency')) || 'MAD';
 
     function formatMoney(value) {
-        return new Intl.NumberFormat('fr-FR', {
+        return new Intl.NumberFormat(INTL, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(toNumber(value)) + ' ' + currency;
@@ -32,7 +45,7 @@
             if (form.dataset.confirmReady === '1') return;
             form.dataset.confirmReady = '1';
             form.addEventListener('submit', function (event) {
-                var message = form.getAttribute('data-confirm') || 'Confirmer cette action ?';
+                var message = form.getAttribute('data-confirm') || tr('confirmDefault', 'Confirmer cette action ?');
                 if (!window.confirm(message)) {
                     event.preventDefault();
                 }
@@ -43,7 +56,7 @@
             if (button.dataset.confirmReady === '1') return;
             button.dataset.confirmReady = '1';
             button.addEventListener('click', function (event) {
-                var message = button.getAttribute('data-confirm') || 'Confirmer cette action ?';
+                var message = button.getAttribute('data-confirm') || tr('confirmDefault', 'Confirmer cette action ?');
                 if (!window.confirm(message)) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -66,7 +79,7 @@
                     icon.classList.toggle('bi-eye', !isPassword);
                     icon.classList.toggle('bi-eye-slash', isPassword);
                 }
-                button.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                button.setAttribute('aria-label', isPassword ? tr('hidePassword', 'Masquer le mot de passe') : tr('showPassword', 'Afficher le mot de passe'));
             });
         });
     }
@@ -254,9 +267,9 @@
         if (inventoryFilter && inventoryFilter.dataset.filterReady !== '1') {
             inventoryFilter.dataset.filterReady = '1';
             inventoryFilter.addEventListener('input', function () {
-                var term = inventoryFilter.value.toLocaleLowerCase('fr');
+                var term = inventoryFilter.value.toLocaleLowerCase(INTL);
                 document.querySelectorAll('[data-inventory-row]').forEach(function (row) {
-                    var text = (row.textContent || '').toLocaleLowerCase('fr');
+                    var text = (row.textContent || '').toLocaleLowerCase(INTL);
                     row.style.display = term === '' || text.indexOf(term) !== -1 ? '' : 'none';
                 });
             });
@@ -344,7 +357,7 @@
             var doc = new DOMParser().parseFromString(html, 'text/html');
             var main = doc.querySelector('main.content');
             if (!main) {
-                alertBox('Le formulaire n’a pas pu être chargé.');
+                alertBox(tr('formLoadError', 'Le formulaire n’a pas pu être chargé.'));
                 return;
             }
 
@@ -377,8 +390,8 @@
         function openModal(url, label) {
             requestToken++;
             var token = requestToken;
-            title.textContent = label || 'Création rapide';
-            body.innerHTML = '<div class="quick-loading"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Chargement du formulaire…</span></div>';
+            title.textContent = label || tr('quickCreate', 'Création rapide');
+            body.innerHTML = loadingHtml();
             modal.show();
 
             fetch(url, {
@@ -393,14 +406,14 @@
                 return response.text().then(function (html) {
                     if (token !== requestToken) return;
                     if (!response.ok) {
-                        alertBox('Impossible de charger le formulaire (HTTP ' + response.status + ').');
+                        alertBox(tr('formHttpError', 'Impossible de charger le formulaire (HTTP :code).').replace(':code', response.status));
                         return;
                     }
                     insertContent(html);
                 });
             }).catch(function () {
                 if (token === requestToken) {
-                    alertBox('Connexion impossible. Vérifiez votre réseau puis réessayez.');
+                    alertBox(tr('networkError', 'Connexion impossible. Vérifiez votre réseau puis réessayez.'));
                 }
             });
         }
@@ -415,7 +428,10 @@
             }
 
             var text = (link.textContent || '').replace(/\s+/g, ' ').trim();
-            var isNewAction = link.hasAttribute('data-modal') || /^(Nouveau|Nouvelle|Nouvel)\b/i.test(text);
+            var newWords = I18N.newWords || ['Nouveau', 'Nouvelle', 'Nouvel'];
+            var isNewAction = link.hasAttribute('data-modal') || newWords.some(function (word) {
+                return text.indexOf(word) === 0;
+            });
             if (!isNewAction) {
                 return;
             }
@@ -452,7 +468,7 @@
             var originalHtml = '';
             if (submitter) {
                 originalHtml = submitter.innerHTML;
-                submitter.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Enregistrement…';
+                submitter.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> ' + tr('saving', 'Enregistrement…');
             }
 
             var payload;
@@ -498,14 +514,14 @@
                 if (submitter) {
                     submitter.innerHTML = originalHtml;
                 }
-                alertBox('L’enregistrement a échoué. Vérifiez votre connexion puis réessayez.');
+                alertBox(tr('saveError', 'L’enregistrement a échoué. Vérifiez votre connexion puis réessayez.'));
             });
         });
 
         modalElement.addEventListener('hidden.bs.modal', function () {
             requestToken++;
-            body.innerHTML = '<div class="quick-loading"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Chargement du formulaire…</span></div>';
-            title.textContent = 'Nouveau';
+            body.innerHTML = loadingHtml();
+            title.textContent = tr('newLabel', 'Nouveau');
         });
     }
 

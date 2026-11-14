@@ -48,11 +48,11 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
 <div class="page-head">
     <div>
         <span class="eyebrow"><?= e($label) ?></span>
-        <h2><?= e($title ?? 'Nouveau document') ?></h2>
-        <p>Enregistrez un brouillon, vérifiez les lignes, puis validez pour impacter le stock.</p>
+        <h2><?= e($title ?? t('Nouveau document')) ?></h2>
+        <p><?= t('Enregistrez un brouillon, vérifiez les lignes, puis validez pour impacter le stock.') ?></p>
     </div>
     <div class="page-actions">
-        <a class="btn btn-soft" href="<?= url($route) ?>"><i class="bi bi-arrow-left"></i> Retour</a>
+        <a class="btn btn-soft" href="<?= url($route) ?>"><i class="bi bi-arrow-left"></i> <?= t('Retour') ?></a>
     </div>
 </div>
 
@@ -60,7 +60,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
     <div class="alert alert-premium alert-danger-soft">
         <i class="bi bi-exclamation-octagon"></i>
         <div>
-            <strong>Le document n’a pas pu être enregistré.</strong>
+            <strong><?= t('Le document n’a pas pu être enregistré.') ?></strong>
             <ul class="mb-0 mt-1">
                 <?php foreach ($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?>
             </ul>
@@ -71,14 +71,14 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
 <?php if ($locations === []): ?>
     <div class="alert alert-premium alert-danger-soft">
         <i class="bi bi-geo-alt"></i>
-        Aucun site actif. <a href="<?= url('/referentiels') ?>">Créez un dépôt ou un point de vente</a> avant de continuer.
+        <?= t('Aucun site actif.') ?> <a href="<?= url('/referentiels') ?>"><?= t('Créez un dépôt ou un point de vente') ?></a> <?= t('avant de continuer.') ?>
     </div>
 <?php endif; ?>
 
 <?php if ($products === []): ?>
     <div class="alert alert-premium alert-danger-soft">
         <i class="bi bi-box-seam"></i>
-        Aucun produit actif. <a href="<?= url('/produits/nouveau') ?>" data-modal>Créez un produit</a> avant de continuer.
+        <?= t('Aucun produit actif.') ?> <a href="<?= url('/produits/nouveau') ?>" data-modal><?= t('Créez un produit') ?></a> <?= t('avant de continuer.') ?>
     </div>
 <?php endif; ?>
 
@@ -87,20 +87,20 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Informations du document</h3><p>Date, site et références</p></div>
+            <div><h3><?= t('Informations du document') ?></h3><p><?= t('Date, site et références') ?></p></div>
             <span class="pill pill-muted"><?= e($label) ?></span>
         </div>
 
         <div class="form-grid form-grid-3">
             <div class="field">
-                <label for="docDate">Date du document <span class="req">*</span></label>
+                <label for="docDate"><?= t('Date du document') ?> <span class="req">*</span></label>
                 <input class="form-control" type="date" id="docDate" name="doc_date" value="<?= e($docDate) ?>" required>
             </div>
 
             <div class="field">
-                <label for="locationId"><?= $isTransfer ? 'Site source' : 'Site' ?> <span class="req">*</span></label>
+                <label for="locationId"><?= $isTransfer ? t('Site source') : t('Site') ?> <span class="req">*</span></label>
                 <select class="form-select" id="locationId" name="location_id" data-quick="location" required>
-                    <option value="">— Sélectionner —</option>
+                    <option value=""><?= t('— Sélectionner —') ?></option>
                     <?php foreach ($locations as $location): ?>
                         <option value="<?= $location->id() ?>" <?= $locationId === $location->id() ? 'selected' : '' ?>>
                             <?= e($location->code()) ?> · <?= e($location->name()) ?> (<?= e($location->typeLabel()) ?>)
@@ -111,22 +111,22 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
 
             <?php if ($isTransfer): ?>
                 <div class="field">
-                    <label for="destId">Site destination <span class="req">*</span></label>
+                    <label for="destId"><?= t('Site destination') ?> <span class="req">*</span></label>
                     <select class="form-select" id="destId" name="dest_location_id" data-quick="location" required>
-                        <option value="">— Sélectionner —</option>
+                        <option value=""><?= t('— Sélectionner —') ?></option>
                         <?php foreach ($locations as $location): ?>
                             <option value="<?= $location->id() ?>" <?= $destId === $location->id() ? 'selected' : '' ?>>
                                 <?= e($location->code()) ?> · <?= e($location->name()) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <small class="field-hint">La destination doit être différente du site source.</small>
+                    <small class="field-hint"><?= t('La destination doit être différente du site source.') ?></small>
                 </div>
             <?php elseif ($isEntry): ?>
                 <div class="field">
-                    <label for="supplierId">Fournisseur</label>
+                    <label for="supplierId"><?= t('Fournisseur') ?></label>
                     <select class="form-select" id="supplierId" name="supplier_id" data-quick="supplier">
-                        <option value="">— Aucun / stock initial —</option>
+                        <option value=""><?= t('— Aucun / stock initial —') ?></option>
                         <?php foreach ($suppliers as $supplier): ?>
                             <option value="<?= $supplier->id() ?>" <?= $supplierId === $supplier->id() ? 'selected' : '' ?>>
                                 <?= e($supplier->name()) ?>
@@ -134,12 +134,12 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                         <?php endforeach; ?>
                     </select>
                     <?php if ($suppliers === []): ?>
-                        <small class="field-hint"><a href="<?= url('/referentiels') ?>">Créez un fournisseur</a> si nécessaire.</small>
+                        <small class="field-hint"><a href="<?= url('/referentiels') ?>"><?= t('Créez un fournisseur') ?></a> <?= t('si nécessaire.') ?></small>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="field">
-                    <label for="motif">Motif <span class="req">*</span></label>
+                    <label for="motif"><?= t('Motif') ?> <span class="req">*</span></label>
                     <select class="form-select" id="motif" name="motif" required>
                         <?php foreach ($motifs as $value => $text): ?>
                             <option value="<?= e($value) ?>" <?= $motif === $value ? 'selected' : '' ?>><?= e($text) ?></option>
@@ -150,7 +150,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
 
             <?php if ($isEntry || $isTransfer): ?>
                 <div class="field">
-                    <label for="motif">Motif <span class="req">*</span></label>
+                    <label for="motif"><?= t('Motif') ?> <span class="req">*</span></label>
                     <select class="form-select" id="motif" name="motif" required>
                         <?php foreach ($motifs as $value => $text): ?>
                             <option value="<?= e($value) ?>" <?= $motif === $value ? 'selected' : '' ?>><?= e($text) ?></option>
@@ -160,23 +160,23 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
             <?php endif; ?>
 
             <div class="field">
-                <label for="reference">Référence externe</label>
+                <label for="reference"><?= t('Référence externe') ?></label>
                 <input class="form-control" type="text" id="reference" name="reference" maxlength="100"
-                       value="<?= e($reference) ?>" placeholder="Bon de livraison, facture…">
+                       value="<?= e($reference) ?>" placeholder="<?= t('Bon de livraison, facture…') ?>">
             </div>
 
             <div class="field field-wide">
-                <label for="notes">Notes</label>
-                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Commentaire interne (optionnel)"><?= e($notes) ?></textarea>
+                <label for="notes"><?= t('Notes') ?></label>
+                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="<?= t('Commentaire interne (optionnel)') ?>"><?= e($notes) ?></textarea>
             </div>
         </div>
     </section>
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Lignes du document</h3><p>Produits, quantités et coûts</p></div>
+            <div><h3><?= t('Lignes du document') ?></h3><p><?= t('Produits, quantités et coûts') ?></p></div>
             <button class="btn btn-soft" type="button" data-add-line>
-                <i class="bi bi-plus-lg"></i> Ajouter une ligne
+                <i class="bi bi-plus-lg"></i> <?= t('Ajouter une ligne') ?>
             </button>
         </div>
 
@@ -185,18 +185,18 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                 <table class="table table-premium lines-table align-middle">
                     <thead>
                     <tr>
-                        <th style="min-width: 300px">Produit</th>
-                        <th style="width: 120px" class="text-end">Quantité</th>
+                        <th style="min-width: 300px"><?= t('Produit') ?></th>
+                        <th style="width: 120px" class="text-end"><?= t('Quantité') ?></th>
                         <?php if ($isEntry): ?>
-                            <th style="width: 150px" class="text-end">Coût unitaire</th>
-                            <th style="width: 150px" class="text-end">Prix de vente</th>
+                            <th style="width: 150px" class="text-end"><?= t('Coût unitaire') ?></th>
+                            <th style="width: 150px" class="text-end"><?= t('Prix de vente') ?></th>
                         <?php elseif ($isExit): ?>
                             <th style="width: 130px" class="text-end">CUMP</th>
-                            <th style="width: 150px" class="text-end">Prix de vente</th>
+                            <th style="width: 150px" class="text-end"><?= t('Prix de vente') ?></th>
                         <?php else: ?>
                             <th style="width: 130px" class="text-end">CUMP</th>
                         <?php endif; ?>
-                        <th style="width: 130px" class="text-end">Total</th>
+                        <th style="width: 130px" class="text-end"><?= t('Total') ?></th>
                         <th style="width: 50px"></th>
                     </tr>
                     </thead>
@@ -209,7 +209,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                         <tr data-line>
                             <td>
                                 <select class="form-select form-select-sm line-product" name="items[<?= $index ?>][product_id]" data-quick="product">
-                                    <option value="">— Choisir un produit —</option>
+                                    <option value=""><?= t('— Choisir un produit —') ?></option>
                                     <?php $renderOptions($selectedProduct); ?>
                                 </select>
                                 <small class="line-unit muted"></small>
@@ -244,7 +244,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                             <?php endif; ?>
                             <td class="text-end"><strong class="line-total">0,00</strong></td>
                             <td class="text-end">
-                                <button class="btn btn-icon btn-sm" type="button" data-remove-line title="Supprimer la ligne">
+                                <button class="btn btn-icon btn-sm" type="button" data-remove-line title="<?= t('Supprimer la ligne') ?>">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </td>
@@ -258,7 +258,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                 <tr data-line>
                     <td>
                         <select class="form-select form-select-sm line-product" name="items[__INDEX__][product_id]" data-quick="product">
-                            <option value="">— Choisir un produit —</option>
+                            <option value=""><?= t('— Choisir un produit —') ?></option>
                             <?php $renderOptions(0); ?>
                         </select>
                         <small class="line-unit muted"></small>
@@ -293,7 +293,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                     <?php endif; ?>
                     <td class="text-end"><strong class="line-total">0,00</strong></td>
                     <td class="text-end">
-                        <button class="btn btn-icon btn-sm" type="button" data-remove-line title="Supprimer la ligne">
+                        <button class="btn btn-icon btn-sm" type="button" data-remove-line title="<?= t('Supprimer la ligne') ?>">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </td>
@@ -302,26 +302,26 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
         </div>
 
         <div class="document-totals">
-            <div><span>Total coût</span><strong id="totalCost">0,00</strong></div>
+            <div><span><?= t('Total coût') ?></span><strong id="totalCost">0,00</strong></div>
             <?php if ($isEntry || $isExit): ?>
-                <div><span>Total vente</span><strong id="totalSale">0,00</strong></div>
+                <div><span><?= t('Total vente') ?></span><strong id="totalSale">0,00</strong></div>
             <?php endif; ?>
         </div>
     </section>
 
     <div class="form-actions">
-        <a class="btn btn-ghost" href="<?= url($route) ?>">Annuler</a>
+        <a class="btn btn-ghost" href="<?= url($route) ?>"><?= t('Annuler') ?></a>
         <?php if ($isTransfer): ?>
             <button class="btn btn-accent" type="submit" name="action" value="draft">
-                <i class="bi bi-save"></i> Enregistrer le transfert
+                <i class="bi bi-save"></i> <?= t('Enregistrer le transfert') ?>
             </button>
         <?php else: ?>
             <button class="btn btn-soft" type="submit" name="action" value="draft">
-                <i class="bi bi-save"></i> Enregistrer le brouillon
+                <i class="bi bi-save"></i> <?= t('Enregistrer le brouillon') ?>
             </button>
             <button class="btn btn-accent" type="submit" name="action" value="validate"
-                    data-confirm="Valider ce document ? Le stock sera immédiatement impacté.">
-                <i class="bi bi-check2-circle"></i> Enregistrer et valider
+                    data-confirm="<?= t('Valider ce document ? Le stock sera immédiatement impacté.') ?>">
+                <i class="bi bi-check2-circle"></i> <?= t('Enregistrer et valider') ?>
             </button>
         <?php endif; ?>
     </div>

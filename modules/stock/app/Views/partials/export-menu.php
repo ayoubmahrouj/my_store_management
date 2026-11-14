@@ -3,7 +3,7 @@
 ?>
 <div class="dropdown export-dropdown">
     <button class="btn btn-soft dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-download"></i> Exporter
+        <i class="bi bi-download"></i> <?= t('Exporter') ?>
     </button>
     <ul class="dropdown-menu dropdown-menu-end export-menu">
         <?php foreach ($exportLinks as $link): ?>

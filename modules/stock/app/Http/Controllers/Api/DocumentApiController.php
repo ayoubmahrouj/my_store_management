@@ -42,7 +42,7 @@ final class DocumentApiController
     {
         $document = (new PdoDocumentRepository())->find((int) $id);
         if ($document === null) {
-            return Response::json(['success' => false, 'message' => 'Document introuvable.', 'errors' => []], 404);
+            return Response::json(['success' => false, 'message' => t('Document introuvable.'), 'errors' => []], 404);
         }
 
         return Response::json([

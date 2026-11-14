@@ -14,13 +14,13 @@ final class RoleMiddleware
     {
         return static function (Request $request) use ($roles): ?Response {
             if (!Auth::check()) {
-                flash('error', 'Veuillez vous connecter pour continuer.');
+                flash('error', t('Veuillez vous connecter pour continuer.'));
                 return Response::redirect(url('/login'));
             }
 
             if (!Auth::isRole(...$roles)) {
                 return View::render('errors/403', [
-                    'title' => 'Accès refusé',
+                    'title' => t('Accès refusé'),
                 ])->withStatus(403);
             }
 

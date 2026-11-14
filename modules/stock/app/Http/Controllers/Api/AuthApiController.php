@@ -18,15 +18,15 @@ final class AuthApiController
         if ($login === '' || $password === '') {
             return Response::json([
                 'success' => false,
-                'message' => 'Identifiants requis.',
-                'errors'  => ['login' => ['Le login et le mot de passe sont obligatoires.']],
+                'message' => t('Identifiants requis.'),
+                'errors'  => ['login' => [t('Le login et le mot de passe sont obligatoires.')]],
             ], 422);
         }
 
         $result = (new AuthService())->attempt($login, $password, $request->ip(), $request->userAgent());
 
         if ($result['error'] !== null || $result['user'] === null) {
-            $status = str_contains((string) $result['error'], 'Trop de tentatives') ? 429 : 401;
+            $status = ($result['code'] ?? '') === 'throttled' ? 429 : 401;
             return Response::json([
                 'success' => false,
                 'message' => $result['error'],
@@ -46,7 +46,7 @@ final class AuthApiController
     {
         $user = Auth::user();
         if ($user === null) {
-            return Response::json(['success' => false, 'message' => 'Non authentifié.', 'errors' => []], 401);
+            return Response::json(['success' => false, 'message' => t('Non authentifié.'), 'errors' => []], 401);
         }
 
         return Response::json([
@@ -62,7 +62,7 @@ final class AuthApiController
         Auth::logout();
         return Response::json([
             'success' => true,
-            'data'    => ['message' => 'Déconnecté.'],
+            'data'    => ['message' => t('Déconnecté.')],
             'meta'    => [],
             'errors'  => [],
         ]);

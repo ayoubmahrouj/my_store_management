@@ -27,7 +27,7 @@ final class ReferenceController
         $suppliersPage = $this->pageOf($request, 'pf', count($suppliers));
 
         return View::render('references/index', [
-            'title'          => 'Référentiels',
+            'title'          => t('Référentiels'),
             'brands'         => $this->slice($brands, $brandsPage),
             'brandsTotal'    => count($brands),
             'brandsPage'     => $brandsPage,
@@ -72,13 +72,13 @@ final class ReferenceController
     public function store(Request $request, string $type): Response
     {
         if (!Auth::isRole('admin', 'responsable')) {
-            flash('error', 'Votre rôle ne permet pas de modifier les référentiels.');
+            flash('error', t('Votre rôle ne permet pas de modifier les référentiels.'));
             return Response::redirect(url('/referentiels'));
         }
 
         try {
             (new PdoReferenceRepository())->create($type, $request->all());
-            flash('success', 'Référentiel ajouté.');
+            flash('success', t('Référentiel ajouté.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -89,13 +89,13 @@ final class ReferenceController
     public function toggle(Request $request, string $type, string $id): Response
     {
         if (!Auth::isRole('admin', 'responsable')) {
-            flash('error', 'Votre rôle ne permet pas de modifier les référentiels.');
+            flash('error', t('Votre rôle ne permet pas de modifier les référentiels.'));
             return Response::redirect(url('/referentiels'));
         }
 
         try {
             (new PdoReferenceRepository())->toggle($type, (int) $id);
-            flash('success', 'Statut du référentiel modifié.');
+            flash('success', t('Statut du référentiel modifié.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }

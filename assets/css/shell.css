@@ -589,3 +589,48 @@ html[dir="rtl"] body.gos-auth-body { font-family: "IBM Plex Sans Arabic", "Plus 
     html[dir="rtl"] .gos-sidebar.is-open { transform: none; }
     html[dir="rtl"] .gos-main { margin-right: 0; }
 }
+
+/* ---------- RTL : montants et quantités ----------
+   Une valeur comme « 314 406 321,32 MAD » commence par un chiffre : sans
+   isolation, l'algorithme bidi déplace les séparateurs et le montant devient
+   illisible. « plaintext » déduit la direction du premier caractère fort,
+   donc les nombres restent en LTR et les libellés arabes en RTL. */
+html[dir="rtl"] td,
+html[dir="rtl"] th,
+html[dir="rtl"] .kpi-card strong,
+html[dir="rtl"] .kpi-label,
+html[dir="rtl"] .document-totals strong,
+html[dir="rtl"] .detail-item strong,
+html[dir="rtl"] .detail-item small,
+html[dir="rtl"] .timeline-step small,
+html[dir="rtl"] .summary-box strong,
+html[dir="rtl"] .stat-value,
+html[dir="rtl"] .pill {
+    unicode-bidi: plaintext;
+}
+
+/* Les valeurs monétaires apparaissent dans des conteneurs variés (KPI, listes
+   de sites, tableaux, badges) : on isole chaque texte pour que le premier
+   caractère fort décide de la direction. Les champs de saisie sont exclus. */
+html[dir="rtl"] main strong,
+html[dir="rtl"] main b,
+html[dir="rtl"] main small,
+html[dir="rtl"] main em,
+html[dir="rtl"] main td,
+html[dir="rtl"] main th,
+html[dir="rtl"] main span,
+html[dir="rtl"] main a,
+html[dir="rtl"] main p,
+html[dir="rtl"] main code,
+html[dir="rtl"] main h1,
+html[dir="rtl"] main h2,
+html[dir="rtl"] main h3,
+html[dir="rtl"] main h4,
+html[dir="rtl"] main .pill,
+html[dir="rtl"] main .badge,
+html[dir="rtl"] .gos-topbar strong,
+html[dir="rtl"] .gos-topbar small,
+html[dir="rtl"] .gos-sidebar strong,
+html[dir="rtl"] .gos-sidebar small {
+    unicode-bidi: plaintext;
+}

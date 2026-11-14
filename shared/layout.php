@@ -190,7 +190,7 @@ function sh_layout_start(array $opts = []): void
     echo '<aside class="gos-sidebar" id="gosSidebar">';
     echo '<a class="gos-brand" href="' . sh_e(sh_url('/index.php')) . '">'
         . '<span class="gos-brand-mark">G</span>'
-        . '<span class="gos-brand-text"><strong>' . sh_e(GOS_APP_NAME) . '</strong><small>' . sh_e(sh_config('app.tagline', 'Stock · Crédits · Chèques')) . '</small></span>'
+        . '<span class="gos-brand-text"><strong>' . sh_e(GOS_APP_NAME) . '</strong><small>' . sh_e(sh_t(sh_config('app.tagline', 'Stock · Crédits · Chèques'))) . '</small></span>'
         . '</a>';
 
     sh_module_switcher($module);
@@ -205,7 +205,7 @@ function sh_layout_start(array $opts = []): void
     if ($user !== null) {
         echo '<div class="gos-user-mini">'
             . '<span class="gos-avatar">' . sh_e(sh_initials((string) $user['name'])) . '</span>'
-            . '<span class="gos-user-mini-text"><strong>' . sh_e((string) $user['name']) . '</strong><small>' . sh_e((string) ($user['role_label'] ?? $user['role_code'] ?? '')) . '</small></span>'
+            . '<span class="gos-user-mini-text"><strong>' . sh_e((string) $user['name']) . '</strong><small>' . sh_e(sh_t((string) ($user['role_label'] ?? $user['role_code'] ?? ''))) . '</small></span>'
             . '</div>';
         echo '<form method="post" action="' . sh_e(sh_url('/logout.php')) . '" class="gos-logout-form">'
             . core_csrf_field()
@@ -232,7 +232,7 @@ function sh_layout_start(array $opts = []): void
         . '</button>';
     if ($user !== null) {
         echo '<span class="gos-user-chip"><span class="gos-avatar gos-avatar-sm">' . sh_e(sh_initials((string) $user['name'])) . '</span>'
-            . '<span class="gos-user-chip-text"><strong>' . sh_e((string) $user['name']) . '</strong><small>' . sh_e((string) ($user['role_label'] ?? '')) . '</small></span></span>';
+            . '<span class="gos-user-chip-text"><strong>' . sh_e((string) $user['name']) . '</strong><small>' . sh_e(sh_t((string) ($user['role_label'] ?? ''))) . '</small></span></span>';
     }
     echo '</div>';
     echo '</header>';

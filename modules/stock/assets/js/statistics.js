@@ -1,6 +1,13 @@
 (function () {
     'use strict';
 
+    var I18N = window.GOS_I18N || {};
+    var INTL = I18N.intl || 'fr-FR';
+
+    function tr(key, fallback) {
+        return I18N[key] || fallback;
+    }
+
     function ready(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback);
@@ -22,18 +29,18 @@
             return;
         }
 
-        var currency = (document.body && document.body.getAttribute('data-currency')) || 'MAD';
+        var currency = I18N.currency || (document.body && document.body.getAttribute('data-currency')) || 'MAD';
         var palette = ['#0e9f6e', '#2563eb', '#c8a24a', '#7c3aed', '#d97706', '#0891b2', '#dc2626', '#64748b'];
 
         function formatMoney(value) {
-            return new Intl.NumberFormat('fr-FR', {
+            return new Intl.NumberFormat(INTL, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(Number(value) || 0) + ' ' + currency;
         }
 
         function formatCompact(value) {
-            return new Intl.NumberFormat('fr-FR', {
+            return new Intl.NumberFormat(INTL, {
                 notation: 'compact',
                 maximumFractionDigits: 1
             }).format(Number(value) || 0);
@@ -51,7 +58,7 @@
 
         if (!window.Chart) {
             ['capitalChart', 'flowChart', 'categoryChart'].forEach(function (id) {
-                showFallback(document.getElementById(id), 'Graphiques indisponibles hors connexion. Les données restent consultables ci-dessous.');
+                showFallback(document.getElementById(id), tr('chartsOffline', 'Graphiques indisponibles hors connexion. Les données restent consultables ci-dessous.'));
             });
             return;
         }
@@ -66,7 +73,7 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Capital',
+                        label: tr('capital', 'Capital'),
                         data: data.capital || [],
                         borderColor: '#0e9f6e',
                         backgroundColor: 'rgba(14, 159, 110, .12)',
@@ -93,7 +100,7 @@
                             displayColors: false,
                             callbacks: {
                                 label: function (context) {
-                                    return 'Capital : ' + formatMoney(context.parsed.y);
+                                    return tr('capitalLabel', 'Capital : ') + formatMoney(context.parsed.y);
                                 }
                             }
                         }
@@ -127,7 +134,7 @@
                     labels: data.labels || [],
                     datasets: [
                         {
-                            label: 'Entrées',
+                            label: tr('entries', 'Entrées'),
                             data: data.inValues || [],
                             backgroundColor: 'rgba(14, 159, 110, .78)',
                             hoverBackgroundColor: '#0e9f6e',
@@ -135,7 +142,7 @@
                             maxBarThickness: 18
                         },
                         {
-                            label: 'Sorties',
+                            label: tr('exits', 'Sorties'),
                             data: data.outValues || [],
                             backgroundColor: 'rgba(220, 38, 38, .68)',
                             hoverBackgroundColor: '#dc2626',
@@ -191,7 +198,7 @@
             var categoryValues = (data.categories && data.categories.values) || [];
 
             if (categoryValues.length === 0) {
-                showFallback(categoryCanvas, 'Aucun stock valorisé par catégorie pour le moment.');
+                showFallback(categoryCanvas, tr('noCategoryStock', 'Aucun stock valorisé par catégorie pour le moment.'));
             } else {
                 new window.Chart(categoryCanvas, {
                     type: 'doughnut',

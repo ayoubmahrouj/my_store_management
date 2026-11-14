@@ -36,9 +36,9 @@ abstract class DocumentController
         $page = min(max(1, (int) $request->query('page', 1)), $pages);
 
         return View::render('documents/index', [
-            'title'     => $this->label,
+            'title'     => t($this->label),
             'type'      => $this->type,
-            'label'     => $this->label,
+            'label'     => t($this->label),
             'route'     => $this->route,
             'documents' => $repo->search($this->type, $filters + [
                 'limit'  => self::PER_PAGE,
@@ -50,13 +50,14 @@ abstract class DocumentController
             'total'     => $total,
             'locations' => $refs->locations(true),
             'suppliers' => $this->type === 'entree' ? $refs->suppliers(true) : [],
-            'motifs'    => $this->motifs,
+            'motifs'    => array_map(static fn (string $text): string => t($text), $this->motifs),
             'filters'   => $filters,
         ]);
     }
 
     public function export(Request $request): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $filters = $this->filters($request);
         $repo = new PdoDocumentRepository();
         $refs = new PdoReferenceRepository();
@@ -92,29 +93,29 @@ abstract class DocumentController
 
             $document = new ExportDocument(
                 filename: $this->type . '-lignes-' . date('Ymd-Hi'),
-                title: 'Détail des lignes · ' . $this->label,
-                subtitle: 'Chaque produit entré ou sorti, avec sa quantité, son prix unitaire et sa valeur totale.',
+                title: t('Détail des lignes') . ' · ' . t($this->label),
+                subtitle: t('Chaque produit entré ou sorti, avec sa quantité, son prix unitaire et sa valeur totale.'),
                 meta: $meta,
                 summary: [
-                    ['label' => 'Lignes', 'value' => (string) count($lines)],
-                    ['label' => 'Quantité totale', 'value' => qty($totalQty)],
-                    ['label' => 'Total achat', 'value' => money($totalCost)],
-                    ['label' => 'Total vente', 'value' => money($totalSale)],
+                    ['label' => t('Lignes'), 'value' => (string) count($lines)],
+                    ['label' => t('Quantité totale'), 'value' => qty($totalQty)],
+                    ['label' => t('Total achat'), 'value' => money($totalCost)],
+                    ['label' => t('Total vente'), 'value' => money($totalSale)],
                 ],
                 columns: [
-                    ['label' => 'N° document', 'width' => 1.0],
-                    ['label' => 'Date', 'width' => 0.8, 'align' => 'center'],
-                    ['label' => 'Statut', 'width' => 0.8, 'align' => 'center'],
-                    ['label' => 'Site', 'width' => 1.2],
-                    ['label' => $this->counterpartyHeader(), 'width' => 1.2],
+                    ['label' => t('N° document'), 'width' => 1.0],
+                    ['label' => t('Date'), 'width' => 0.8, 'align' => 'center'],
+                    ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center'],
+                    ['label' => t('Site'), 'width' => 1.2],
+                    ['label' => t($this->counterpartyHeader()), 'width' => 1.2],
                     ['label' => 'SKU', 'width' => 0.9],
-                    ['label' => 'Produit', 'width' => 2.0],
-                    ['label' => 'Unité', 'width' => 0.55, 'align' => 'center'],
-                    ['label' => 'Quantité', 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Prix achat (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Total achat (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Prix vente (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Total vente (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Produit'), 'width' => 2.0],
+                    ['label' => t('Unité'), 'width' => 0.55, 'align' => 'center'],
+                    ['label' => t('Quantité'), 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Prix achat (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Total achat (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Prix vente (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Total vente (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
                 ],
                 rows: $rows,
                 totals: [null, null, null, null, null, null, null, null, $totalQty, null, $totalCost, null, $totalSale],
@@ -154,26 +155,26 @@ abstract class DocumentController
 
         $document = new ExportDocument(
             filename: $this->type . '-registre-' . date('Ymd-Hi'),
-            title: 'Registre · ' . $this->label,
-            subtitle: 'Liste filtrée des documents, avec leur montant d’achat, de vente et leur nombre de lignes.',
+            title: t('Registre') . ' · ' . t($this->label),
+            subtitle: t('Liste filtrée des documents, avec leur montant d’achat, de vente et leur nombre de lignes.'),
             meta: $meta,
             summary: [
-                ['label' => 'Documents', 'value' => (string) count($documents)],
-                ['label' => 'Lignes', 'value' => (string) $totalLines],
-                ['label' => 'Total achat', 'value' => money($totalCost)],
-                ['label' => 'Total vente', 'value' => money($totalSale)],
+                ['label' => t('Documents'), 'value' => (string) count($documents)],
+                ['label' => t('Lignes'), 'value' => (string) $totalLines],
+                ['label' => t('Total achat'), 'value' => money($totalCost)],
+                ['label' => t('Total vente'), 'value' => money($totalSale)],
             ],
             columns: [
-                ['label' => 'N° document', 'width' => 1.0],
-                ['label' => 'Date', 'width' => 0.8, 'align' => 'center'],
-                ['label' => 'Statut', 'width' => 0.9, 'align' => 'center'],
-                ['label' => 'Site', 'width' => 1.4],
-                ['label' => $this->counterpartyHeader(), 'width' => 1.4],
-                ['label' => 'Référence', 'width' => 1.0],
-                ['label' => 'Lignes', 'width' => 0.6, 'align' => 'right', 'type' => 'number'],
-                ['label' => 'Total achat (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Total vente (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Créé par', 'width' => 1.1],
+                ['label' => t('N° document'), 'width' => 1.0],
+                ['label' => t('Date'), 'width' => 0.8, 'align' => 'center'],
+                ['label' => t('Statut'), 'width' => 0.9, 'align' => 'center'],
+                ['label' => t('Site'), 'width' => 1.4],
+                ['label' => t($this->counterpartyHeader()), 'width' => 1.4],
+                ['label' => t('Référence'), 'width' => 1.0],
+                ['label' => t('Lignes'), 'width' => 0.6, 'align' => 'right', 'type' => 'number'],
+                ['label' => t('Total achat (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Total vente (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Créé par'), 'width' => 1.1],
             ],
             rows: $rows,
             totals: [null, null, null, null, null, null, $totalLines, $totalCost, $totalSale, null],
@@ -186,9 +187,10 @@ abstract class DocumentController
 
     public function exportDocument(Request $request, string $id): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $document = (new PdoDocumentRepository())->find((int) $id);
         if ($document === null || $document->type() !== $this->type) {
-            return View::render('errors/404', ['title' => 'Document introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Document introuvable')])->withStatus(404);
         }
 
         $totalQty = 0.0;
@@ -214,44 +216,44 @@ abstract class DocumentController
         }
 
         $meta = [
-            'Document : ' . $document->numero(),
-            'Date : ' . date('d/m/Y', strtotime($document->docDate())),
-            'Statut : ' . $document->statusLabel(),
-            'Site : ' . $document->locationName(),
+            t('Document : :value', ['value' => $document->numero()]),
+            t('Date : :value', ['value' => date('d/m/Y', strtotime($document->docDate()))]),
+            t('Statut : :value', ['value' => t($document->statusLabel())]),
+            t('Site : :label', ['label' => $document->locationName()]),
         ];
         if ($document->supplierName() !== null) {
-            $meta[] = 'Fournisseur : ' . $document->supplierName();
+            $meta[] = t('Fournisseur : :value', ['value' => $document->supplierName()]);
         }
         if ($document->destLocationName() !== null) {
-            $meta[] = 'Destination : ' . $document->destLocationName();
+            $meta[] = t('Destination : :value', ['value' => $document->destLocationName()]);
         }
         if ($document->motif() !== null) {
-            $meta[] = 'Motif : ' . ($this->motifs[$document->motif()] ?? ucfirst($document->motif()));
+            $meta[] = t('Motif : :value', ['value' => t($this->motifs[$document->motif()] ?? ucfirst($document->motif()))]);
         }
         if ($document->reference() !== null && $document->reference() !== '') {
-            $meta[] = 'Référence : ' . $document->reference();
+            $meta[] = t('Référence : :value', ['value' => $document->reference()]);
         }
 
         $export = new ExportDocument(
             filename: $this->type . '-' . $document->numero() . '-' . date('Ymd-Hi'),
-            title: $this->documentTitle() . ' · ' . $document->numero(),
-            subtitle: 'Détail complet des produits, quantités et prix de ce document.',
+            title: t($this->documentTitle()) . ' · ' . $document->numero(),
+            subtitle: t('Détail complet des produits, quantités et prix de ce document.'),
             meta: $meta,
             summary: [
-                ['label' => 'Lignes', 'value' => (string) count($rows)],
-                ['label' => 'Quantité totale', 'value' => qty($totalQty)],
-                ['label' => 'Total achat', 'value' => money($totalCost)],
-                ['label' => 'Total vente', 'value' => money($totalSale)],
+                ['label' => t('Lignes'), 'value' => (string) count($rows)],
+                ['label' => t('Quantité totale'), 'value' => qty($totalQty)],
+                ['label' => t('Total achat'), 'value' => money($totalCost)],
+                ['label' => t('Total vente'), 'value' => money($totalSale)],
             ],
             columns: [
                 ['label' => 'SKU', 'width' => 0.9],
-                ['label' => 'Produit', 'width' => 2.6],
-                ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Prix achat (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Total achat (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Prix vente (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Total vente (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Produit'), 'width' => 2.6],
+                ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Prix achat (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Total achat (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Prix vente (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Total vente (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
             ],
             rows: $rows,
             totals: [null, null, null, $totalQty, null, $totalCost, null, $totalSale],
@@ -299,14 +301,14 @@ abstract class DocumentController
             }
 
             flash('success', $validated
-                ? 'Le document a été enregistré et validé. Le stock est à jour.'
-                : 'Le document a été enregistré en brouillon.');
+                ? t('Le document a été enregistré et validé. Le stock est à jour.')
+                : t('Le document a été enregistré en brouillon.'));
 
             return Response::redirect(url($this->route . '/' . $id));
         } catch (Throwable $e) {
             if ($createdId > 0 && $request->input('action') === 'validate') {
                 try {
-                    $service->cancelDocument($createdId, $userId, 'Validation immédiate échouée.');
+                    $service->cancelDocument($createdId, $userId, t('Validation immédiate échouée.'));
                 } catch (Throwable) {
                     // Le brouillon reste disponible pour correction manuelle.
                 }
@@ -320,14 +322,15 @@ abstract class DocumentController
     {
         $document = (new PdoDocumentRepository())->find((int) $id);
         if ($document === null || $document->type() !== $this->type) {
-            return View::render('errors/404', ['title' => 'Document introuvable'])->withStatus(404);
+            return View::render('errors/404', ['title' => t('Document introuvable')])->withStatus(404);
         }
 
         return View::render('documents/show', [
             'title'    => $document->numero(),
             'type'     => $this->type,
-            'label'    => $this->label,
+            'label'    => t($this->label),
             'route'    => $this->route,
+            'motifs'   => array_map(static fn (string $text): string => t($text), $this->motifs),
             'document' => $document,
         ]);
     }
@@ -336,7 +339,7 @@ abstract class DocumentController
     {
         try {
             (new StockService())->validateDocument((int) $id, Auth::id());
-            flash('success', 'Document validé : les mouvements de stock ont été générés.');
+            flash('success', t('Document validé : les mouvements de stock ont été générés.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -348,7 +351,7 @@ abstract class DocumentController
     {
         try {
             (new StockService())->cancelDocument((int) $id, Auth::id(), (string) $request->input('reason', ''));
-            flash('success', 'Le document a été annulé.');
+            flash('success', t('Le document a été annulé.'));
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
@@ -378,32 +381,32 @@ abstract class DocumentController
      */
     private function filterMeta(array $filters, PdoReferenceRepository $refs): array
     {
-        $meta = ['Site : ' . $this->locationLabel($refs->locations(true), (int) $filters['location_id'])];
+        $meta = [t('Site : :label', ['label' => $this->locationLabel($refs->locations(true), (int) $filters['location_id'])])];
         if ((string) $filters['status'] !== '') {
-            $meta[] = 'Statut : ' . $this->statusLabel((string) $filters['status']);
+            $meta[] = t('Statut : :value', ['value' => $this->statusLabel((string) $filters['status'])]);
         }
         if ((string) $filters['date_from'] !== '' || (string) $filters['date_to'] !== '') {
-            $meta[] = 'Période : ' . $this->dateRangeLabel((string) $filters['date_from'], (string) $filters['date_to']);
+            $meta[] = t('Période : :label', ['label' => $this->dateRangeLabel((string) $filters['date_from'], (string) $filters['date_to'])]);
         }
         if ((int) $filters['supplier_id'] > 0) {
             foreach ($refs->suppliers(true) as $supplier) {
                 if ($supplier->id() === (int) $filters['supplier_id']) {
-                    $meta[] = 'Fournisseur : ' . $supplier->name();
+                    $meta[] = t('Fournisseur : :value', ['value' => $supplier->name()]);
                     break;
                 }
             }
         }
         if ((string) $filters['product_q'] !== '') {
-            $meta[] = 'Produit : « ' . (string) $filters['product_q'] . ' »';
+            $meta[] = t('Produit : « :q »', ['q' => (string) $filters['product_q']]);
         }
         if ((string) $filters['motif'] !== '') {
-            $meta[] = 'Motif : ' . ($this->motifs[(string) $filters['motif']] ?? ucfirst((string) $filters['motif']));
+            $meta[] = t('Motif : :value', ['value' => t($this->motifs[(string) $filters['motif']] ?? ucfirst((string) $filters['motif']))]);
         }
         if ((string) $filters['q'] !== '') {
-            $meta[] = 'Recherche : « ' . (string) $filters['q'] . ' »';
+            $meta[] = t('Recherche : « :q »', ['q' => (string) $filters['q']]);
         }
         if ((string) $filters['amount_from'] !== '' || (string) $filters['amount_to'] !== '') {
-            $meta[] = 'Montant : ' . $this->amountRangeLabel((string) $filters['amount_from'], (string) $filters['amount_to']);
+            $meta[] = t('Montant : :label', ['label' => $this->amountRangeLabel((string) $filters['amount_from'], (string) $filters['amount_to'])]);
         }
 
         return $meta;
@@ -412,11 +415,11 @@ abstract class DocumentController
     private function statusLabel(string $status): string
     {
         return match ($status) {
-            'brouillon' => 'Brouillon',
-            'valide' => 'Validé',
-            'expedie' => 'Expédié',
-            'recu' => 'Reçu',
-            'annule' => 'Annulé',
+            'brouillon' => t('Brouillon'),
+            'valide' => t('Validé'),
+            'expedie' => t('Expédié'),
+            'recu' => t('Reçu'),
+            'annule' => t('Annulé'),
             default => ucfirst($status),
         };
     }
@@ -432,25 +435,25 @@ abstract class DocumentController
         }
         $motif = (string) ($item['motif'] ?? '');
 
-        return $motif !== '' ? ($this->motifs[$motif] ?? ucfirst($motif)) : '—';
+        return $motif !== '' ? t($this->motifs[$motif] ?? ucfirst($motif)) : '—';
     }
 
     private function counterpartyHeader(): string
     {
         return match ($this->type) {
-            'entree' => 'Fournisseur',
-            'transfert' => 'Destination',
-            default => 'Motif',
+            'entree' => t('Fournisseur'),
+            'transfert' => t('Destination'),
+            default => t('Motif'),
         };
     }
 
     private function documentTitle(): string
     {
         return match ($this->type) {
-            'entree' => 'Bon d’entrée',
-            'sortie' => 'Bon de sortie',
-            'transfert' => 'Bon de transfert',
-            default => 'Document de stock',
+            'entree' => t('Bon d’entrée'),
+            'sortie' => t('Bon de sortie'),
+            'transfert' => t('Bon de transfert'),
+            default => t('Document de stock'),
         };
     }
 
@@ -458,7 +461,7 @@ abstract class DocumentController
     private function locationLabel(array $items, int $id): string
     {
         if ($id <= 0) {
-            return 'Tous les sites';
+            return t('Tous les sites');
         }
         foreach ($items as $item) {
             if ($item->id() === $id) {
@@ -466,31 +469,31 @@ abstract class DocumentController
             }
         }
 
-        return 'Site #' . $id;
+        return t('Site #:id', ['id' => $id]);
     }
 
     private function dateRangeLabel(string $from, string $to): string
     {
         if ($from !== '' && $to !== '') {
-            return 'du ' . date('d/m/Y', strtotime($from)) . ' au ' . date('d/m/Y', strtotime($to));
+            return t('du :from au :to', ['from' => date('d/m/Y', strtotime($from)), 'to' => date('d/m/Y', strtotime($to))]);
         }
         if ($from !== '') {
-            return 'depuis le ' . date('d/m/Y', strtotime($from));
+            return t('depuis le :date', ['date' => date('d/m/Y', strtotime($from))]);
         }
 
-        return 'jusqu’au ' . date('d/m/Y', strtotime($to));
+        return t('jusqu’au :date', ['date' => date('d/m/Y', strtotime($to))]);
     }
 
     private function amountRangeLabel(string $min, string $max): string
     {
         if ($min !== '' && $max !== '') {
-            return 'de ' . money($min) . ' à ' . money($max);
+            return t('de :min à :max', ['min' => money($min), 'max' => money($max)]);
         }
         if ($min !== '') {
-            return '≥ ' . money($min);
+            return t('≥ :min', ['min' => money($min)]);
         }
 
-        return '≤ ' . money($max);
+        return t('≤ :max', ['max' => money($max)]);
     }
 
     /**
@@ -504,9 +507,9 @@ abstract class DocumentController
         return View::render('documents/form', [
             'title'      => $this->createTitle(),
             'type'       => $this->type,
-            'label'      => $this->label,
+            'label'      => t($this->label),
             'route'      => $this->route,
-            'motifs'     => $this->motifs,
+            'motifs'     => array_map(static fn (string $text): string => t($text), $this->motifs),
             'locations'  => $refs->locations(true),
             'suppliers'  => $this->type === 'entree' ? $refs->suppliers(true) : [],
             'products'   => (new PdoProductRepository())->allActiveSimple(),
@@ -518,10 +521,10 @@ abstract class DocumentController
     private function createTitle(): string
     {
         return match ($this->type) {
-            'entree' => 'Nouvelle entrée de stock',
-            'sortie' => 'Nouvelle sortie de stock',
-            'transfert' => 'Nouveau transfert',
-            default => 'Nouveau document',
+            'entree' => t('Nouvelle entrée de stock'),
+            'sortie' => t('Nouvelle sortie de stock'),
+            'transfert' => t('Nouveau transfert'),
+            default => t('Nouveau document'),
         };
     }
 }

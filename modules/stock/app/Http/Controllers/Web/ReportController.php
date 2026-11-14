@@ -51,7 +51,7 @@ final class ReportController
         $movementPage = min(max(1, (int) $request->query('mp', 1)), $movementPages);
 
         return View::render('reports/index', [
-            'title'      => 'Rapports',
+            'title'      => t('Rapports'),
             'stats'      => [
                 'total_value'    => $summary['value'],
                 'total_quantity' => $summary['quantity'],
@@ -81,6 +81,7 @@ final class ReportController
 
     public function export(Request $request): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $kind = (string) $request->query('export', 'stock');
         $format = (string) $request->query('format', 'xls');
         $filters = $this->filters($request);
@@ -109,7 +110,7 @@ final class ReportController
         foreach ($products as $product) {
             $totalQty += $product->quantity();
             $totalValue += $product->stockValue();
-            $status = $product->isOutOfStock() ? 'Rupture' : ($product->isLowStock() ? 'Seuil bas' : 'En stock');
+            $status = $product->isOutOfStock() ? t('Rupture') : ($product->isLowStock() ? t('Seuil bas') : t('En stock'));
             if ($product->isLowStock() || $product->isOutOfStock()) {
                 $low++;
             }
@@ -130,27 +131,27 @@ final class ReportController
 
         $document = new ExportDocument(
             filename: 'rapport-stock-' . date('Ymd-Hi'),
-            title: 'Rapport de stock',
-            subtitle: 'État consolidé du stock, valorisé au coût moyen pondéré et filtré selon vos critères.',
+            title: t('Rapport de stock'),
+            subtitle: t('État consolidé du stock, valorisé au coût moyen pondéré et filtré selon vos critères.'),
             meta: $this->filterMeta($filters),
             summary: [
-                ['label' => 'Produits', 'value' => (string) count($products)],
-                ['label' => 'Quantité totale', 'value' => qty($totalQty)],
-                ['label' => 'Capital stock', 'value' => money($totalValue)],
-                ['label' => 'Alertes seuil', 'value' => (string) $low],
+                ['label' => t('Produits'), 'value' => (string) count($products)],
+                ['label' => t('Quantité totale'), 'value' => qty($totalQty)],
+                ['label' => t('Capital stock'), 'value' => money($totalValue)],
+                ['label' => t('Alertes seuil'), 'value' => (string) $low],
             ],
             columns: [
                 ['label' => 'SKU', 'width' => 0.9],
-                ['label' => 'Désignation', 'width' => 2.4],
-                ['label' => 'Marque', 'width' => 1.1],
-                ['label' => 'Catégorie', 'width' => 1.2],
-                ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                ['label' => 'Statut', 'width' => 0.8, 'align' => 'center'],
-                ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'CUMP (' . currency() . ')', 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Valeur stock (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Seuil min', 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Positionnement', 'width' => 1.8],
+                ['label' => t('Désignation'), 'width' => 2.4],
+                ['label' => t('Marque'), 'width' => 1.1],
+                ['label' => t('Catégorie'), 'width' => 1.2],
+                ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                ['label' => t('Statut'), 'width' => 0.8, 'align' => 'center'],
+                ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('CUMP (:currency)', ['currency' => currency()]), 'width' => 0.9, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Valeur stock (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Seuil min'), 'width' => 0.7, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Positionnement'), 'width' => 1.8],
             ],
             rows: $rows,
             totals: [null, null, null, null, null, null, $totalQty, null, $totalValue, null, null],
@@ -187,7 +188,7 @@ final class ReportController
                 $movement->product(),
                 $movement->sku(),
                 $movement->location(),
-                $movement->isIn() ? 'Entrée' : 'Sortie',
+                $movement->isIn() ? t('Entrée') : t('Sortie'),
                 $movement->qty(),
                 $movement->unitCost(),
                 $movement->value(),
@@ -197,27 +198,27 @@ final class ReportController
 
         $document = new ExportDocument(
             filename: 'rapport-mouvements-' . date('Ymd-Hi'),
-            title: 'Rapport des mouvements de stock',
-            subtitle: 'Historique détaillé et valorisé des entrées, sorties, transferts et inventaires.',
+            title: t('Rapport des mouvements de stock'),
+            subtitle: t('Historique détaillé et valorisé des entrées, sorties, transferts et inventaires.'),
             meta: $this->movementMeta($filters),
             summary: [
-                ['label' => 'Mouvements', 'value' => (string) count($movements)],
-                ['label' => 'Quantité entrée', 'value' => qty($inQty)],
-                ['label' => 'Quantité sortie', 'value' => qty($outQty)],
-                ['label' => 'Valeur totale', 'value' => money($totalValue)],
+                ['label' => t('Mouvements'), 'value' => (string) count($movements)],
+                ['label' => t('Quantité entrée'), 'value' => qty($inQty)],
+                ['label' => t('Quantité sortie'), 'value' => qty($outQty)],
+                ['label' => t('Valeur totale'), 'value' => money($totalValue)],
             ],
             columns: [
-                ['label' => 'Date', 'width' => 1.0],
-                ['label' => 'Document', 'width' => 1.0],
-                ['label' => 'Type', 'width' => 0.8],
-                ['label' => 'Produit', 'width' => 2.2],
+                ['label' => t('Date'), 'width' => 1.0],
+                ['label' => t('Document'), 'width' => 1.0],
+                ['label' => t('Type'), 'width' => 0.8],
+                ['label' => t('Produit'), 'width' => 2.2],
                 ['label' => 'SKU', 'width' => 0.9],
-                ['label' => 'Site', 'width' => 1.3],
-                ['label' => 'Sens', 'width' => 0.6, 'align' => 'center'],
-                ['label' => 'Quantité', 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Coût unitaire (' . currency() . ')', 'width' => 0.95, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Valeur (' . currency() . ')', 'width' => 0.95, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Opérateur', 'width' => 1.0],
+                ['label' => t('Site'), 'width' => 1.3],
+                ['label' => t('Sens'), 'width' => 0.6, 'align' => 'center'],
+                ['label' => t('Quantité'), 'width' => 0.75, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Coût unitaire (:currency)', ['currency' => currency()]), 'width' => 0.95, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Valeur (:currency)', ['currency' => currency()]), 'width' => 0.95, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Opérateur'), 'width' => 1.0],
             ],
             rows: $rows,
             totals: [null, null, null, null, null, null, null, $totalQty, null, $totalValue, null],
@@ -291,23 +292,23 @@ final class ReportController
     private function filterMeta(array $filters): array
     {
         $refs = new PdoReferenceRepository();
-        $meta = ['Site : ' . $this->locationLabel($refs->locations(true), (int) $filters['location_id'])];
+        $meta = [t('Site : :label', ['label' => $this->locationLabel($refs->locations(true), (int) $filters['location_id'])])];
         if ((int) $filters['category_id'] > 0) {
-            $meta[] = 'Catégorie : ' . $this->nameLabel($refs->categories(true), (int) $filters['category_id']);
+            $meta[] = t('Catégorie : :label', ['label' => $this->nameLabel($refs->categories(true), (int) $filters['category_id'])]);
         }
         if ((int) $filters['brand_id'] > 0) {
-            $meta[] = 'Marque : ' . $this->nameLabel($refs->brands(true), (int) $filters['brand_id']);
+            $meta[] = t('Marque : :label', ['label' => $this->nameLabel($refs->brands(true), (int) $filters['brand_id'])]);
         }
         if ((string) $filters['status'] !== '') {
-            $meta[] = 'Statut : ' . match ((string) $filters['status']) {
-                'out' => 'Rupture',
-                'low' => 'Seuil bas',
-                'ok' => 'En stock',
-                default => 'Tous',
-            };
+            $meta[] = t('Statut : :value', ['value' => match ((string) $filters['status']) {
+                'out' => t('Rupture'),
+                'low' => t('Seuil bas'),
+                'ok' => t('En stock'),
+                default => t('Tous'),
+            }]);
         }
         if ((string) $filters['q'] !== '') {
-            $meta[] = 'Recherche : « ' . (string) $filters['q'] . ' »';
+            $meta[] = t('Recherche : « :q »', ['q' => (string) $filters['q']]);
         }
 
         return $meta;
@@ -320,13 +321,13 @@ final class ReportController
     {
         $meta = $this->filterMeta($filters);
         if ((string) $filters['movement_type'] !== '') {
-            $meta[] = 'Type : ' . doc_type_label((string) $filters['movement_type']);
+            $meta[] = t('Type : :value', ['value' => doc_type_label((string) $filters['movement_type'])]);
         }
         if ((string) $filters['direction'] !== '') {
-            $meta[] = 'Sens : ' . ((string) $filters['direction'] === 'in' ? 'Entrées' : 'Sorties');
+            $meta[] = t('Sens : :value', ['value' => (string) $filters['direction'] === 'in' ? t('Entrées') : t('Sorties')]);
         }
         if ((string) $filters['date_from'] !== '' || (string) $filters['date_to'] !== '') {
-            $meta[] = 'Période : ' . $this->dateRangeLabel((string) $filters['date_from'], (string) $filters['date_to']);
+            $meta[] = t('Période : :label', ['label' => $this->dateRangeLabel((string) $filters['date_from'], (string) $filters['date_to'])]);
         }
 
         return $meta;
@@ -336,7 +337,7 @@ final class ReportController
     private function locationLabel(array $items, int $id): string
     {
         if ($id <= 0) {
-            return 'Tous les sites';
+            return t('Tous les sites');
         }
         foreach ($items as $item) {
             if ($item->id() === $id) {
@@ -344,7 +345,7 @@ final class ReportController
             }
         }
 
-        return 'Site #' . $id;
+        return t('Site #:id', ['id' => $id]);
     }
 
     /** @param array<int, Category>|array<int, Marque> $items */
@@ -362,12 +363,12 @@ final class ReportController
     private function dateRangeLabel(string $from, string $to): string
     {
         if ($from !== '' && $to !== '') {
-            return 'du ' . date('d/m/Y', strtotime($from)) . ' au ' . date('d/m/Y', strtotime($to));
+            return t('du :from au :to', ['from' => date('d/m/Y', strtotime($from)), 'to' => date('d/m/Y', strtotime($to))]);
         }
         if ($from !== '') {
-            return 'depuis le ' . date('d/m/Y', strtotime($from));
+            return t('depuis le :date', ['date' => date('d/m/Y', strtotime($from))]);
         }
 
-        return 'jusqu’au ' . date('d/m/Y', strtotime($to));
+        return t('jusqu’au :date', ['date' => date('d/m/Y', strtotime($to))]);
     }
 }

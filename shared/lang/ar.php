@@ -85,4 +85,12 @@ return [
     'sign_in' => 'دخول',
     'single_login' => 'تسجيل دخول واحد للوحدات الثلاث',
     'session_expired' => 'انتهت الجلسة. يرجى إعادة تسجيل الدخول.',
+
+    /* Rôles et signature */
+    'Administrateur' => 'المدير',
+    'Responsable stock' => 'مسؤول المخزون',
+    'Magasinier' => 'أمين المخزن',
+    'Vendeur' => 'البائع',
+    'Auditeur' => 'المدقق',
+    'Stock · Crédits · Chèques' => 'المخزون · الكريدي · الشيكات',
 ];

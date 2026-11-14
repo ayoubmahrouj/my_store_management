@@ -41,14 +41,14 @@ final class StatisticsController
         ]);
 
         return View::render('statistics/index', [
-            'title'         => 'Statistiques',
+            'title'         => t('Statistiques'),
             'days'          => $filters['days'],
             'locationId'    => $filters['location_id'],
             'locationName'  => $this->locationLabel($locations, $filters['location_id']),
             'categoryId'    => $filters['category_id'],
-            'categoryName'  => $filters['category_id'] > 0 ? $this->nameLabel($categories, $filters['category_id']) : 'Toutes les catégories',
+            'categoryName'  => $filters['category_id'] > 0 ? $this->nameLabel($categories, $filters['category_id']) : t('Toutes les catégories'),
             'brandId'       => $filters['brand_id'],
-            'brandName'     => $filters['brand_id'] > 0 ? $this->nameLabel($brands, $filters['brand_id']) : 'Toutes les marques',
+            'brandName'     => $filters['brand_id'] > 0 ? $this->nameLabel($brands, $filters['brand_id']) : t('Toutes les marques'),
             'locations'     => $locations,
             'categoriesList' => $categories,
             'brands'        => $brands,
@@ -64,6 +64,7 @@ final class StatisticsController
 
     public function export(Request $request): Response
     {
+        $GLOBALS['gos_export_french'] = true;
         $filters = $this->filters($request);
         $kind = (string) $request->query('export', 'history');
         $format = (string) $request->query('format', 'xls');
@@ -77,21 +78,21 @@ final class StatisticsController
 
         $refs = new PdoReferenceRepository();
         $meta = [
-            'Période : ' . date('d/m/Y', strtotime($history['start_date'])) . ' → ' . date('d/m/Y', strtotime($history['end_date'])),
-            'Site : ' . $this->locationLabel($refs->locations(true), $filters['location_id']),
+            t('Période : :from → :to', ['from' => date('d/m/Y', strtotime($history['start_date'])), 'to' => date('d/m/Y', strtotime($history['end_date']))]),
+            t('Site : :label', ['label' => $this->locationLabel($refs->locations(true), $filters['location_id'])]),
         ];
         if ($filters['category_id'] > 0) {
-            $meta[] = 'Catégorie : ' . $this->nameLabel($refs->categories(true), $filters['category_id']);
+            $meta[] = t('Catégorie : :label', ['label' => $this->nameLabel($refs->categories(true), $filters['category_id'])]);
         }
         if ($filters['brand_id'] > 0) {
-            $meta[] = 'Marque : ' . $this->nameLabel($refs->brands(true), $filters['brand_id']);
+            $meta[] = t('Marque : :label', ['label' => $this->nameLabel($refs->brands(true), $filters['brand_id'])]);
         }
 
         $summaryBoxes = [
-            ['label' => 'Capital stock', 'value' => money($summary['total_value'])],
-            ['label' => 'Quantité', 'value' => qty($summary['total_quantity'])],
-            ['label' => 'Valeur potentielle', 'value' => money($summary['potential_value'])],
-            ['label' => 'Marge potentielle', 'value' => money($summary['margin_value'])],
+            ['label' => t('Capital stock'), 'value' => money($summary['total_value'])],
+            ['label' => t('Quantité'), 'value' => qty($summary['total_quantity'])],
+            ['label' => t('Valeur potentielle'), 'value' => money($summary['potential_value'])],
+            ['label' => t('Marge potentielle'), 'value' => money($summary['margin_value'])],
         ];
 
         if ($kind === 'sites') {
@@ -104,7 +105,7 @@ final class StatisticsController
                 $share = $totalCapital > 0 ? ((float) $row['value'] / $totalCapital) * 100 : 0.0;
                 $rows[] = [
                     $row['name'],
-                    $row['type'] === 'depot' ? 'Dépôt' : 'Point de vente',
+                    $row['type'] === 'depot' ? t('Dépôt') : t('Point de vente'),
                     (float) $row['quantity'],
                     (float) $row['value'],
                     $share,
@@ -113,16 +114,16 @@ final class StatisticsController
 
             $document = new ExportDocument(
                 filename: 'statistiques-sites-' . date('Ymd-Hi'),
-                title: 'Capital par site',
-                subtitle: 'Répartition du capital stock entre les dépôts et points de vente.',
+                title: t('Capital par site'),
+                subtitle: t('Répartition du capital stock entre les dépôts et points de vente.'),
                 meta: $meta,
                 summary: $summaryBoxes,
                 columns: [
-                    ['label' => 'Site', 'width' => 2.2],
-                    ['label' => 'Type', 'width' => 1.0],
-                    ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Capital (' . currency() . ')', 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Part (%)', 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
+                    ['label' => t('Site'), 'width' => 2.2],
+                    ['label' => t('Type'), 'width' => 1.0],
+                    ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Capital (:currency)', ['currency' => currency()]), 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Part (%)'), 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
                 ],
                 rows: $rows,
                 totals: [null, null, null, $totalCapital, null],
@@ -152,16 +153,16 @@ final class StatisticsController
 
             $document = new ExportDocument(
                 filename: 'statistiques-categories-' . date('Ymd-Hi'),
-                title: 'Capital par catégorie',
-                subtitle: 'Répartition du capital stock et des quantités par famille de produits.',
+                title: t('Capital par catégorie'),
+                subtitle: t('Répartition du capital stock et des quantités par famille de produits.'),
                 meta: $meta,
                 summary: $summaryBoxes,
                 columns: [
-                    ['label' => 'Catégorie', 'width' => 2.2],
-                    ['label' => 'Produits', 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
-                    ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Capital (' . currency() . ')', 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Part (%)', 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
+                    ['label' => t('Catégorie'), 'width' => 2.2],
+                    ['label' => t('Produits'), 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
+                    ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Capital (:currency)', ['currency' => currency()]), 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Part (%)'), 'width' => 0.8, 'align' => 'right', 'type' => 'number'],
                 ],
                 rows: $rows,
                 totals: [null, null, null, $totalCapital, null],
@@ -195,19 +196,19 @@ final class StatisticsController
 
             $document = new ExportDocument(
                 filename: 'statistiques-produits-' . date('Ymd-Hi'),
-                title: 'Produits les plus valorisés',
-                subtitle: 'Classement du stock par capital immobilisé, avec quantité et marge potentielle.',
+                title: t('Produits les plus valorisés'),
+                subtitle: t('Classement du stock par capital immobilisé, avec quantité et marge potentielle.'),
                 meta: $meta,
                 summary: $summaryBoxes,
                 columns: [
                     ['label' => 'SKU', 'width' => 0.9],
-                    ['label' => 'Désignation', 'width' => 2.4],
-                    ['label' => 'Catégorie', 'width' => 1.2],
-                    ['label' => 'Unité', 'width' => 0.6, 'align' => 'center'],
-                    ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                    ['label' => 'Capital (' . currency() . ')', 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Valeur potentielle (' . currency() . ')', 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
-                    ['label' => 'Marge potentielle (' . currency() . ')', 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Désignation'), 'width' => 2.4],
+                    ['label' => t('Catégorie'), 'width' => 1.2],
+                    ['label' => t('Unité'), 'width' => 0.6, 'align' => 'center'],
+                    ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                    ['label' => t('Capital (:currency)', ['currency' => currency()]), 'width' => 1.1, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Valeur potentielle (:currency)', ['currency' => currency()]), 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
+                    ['label' => t('Marge potentielle (:currency)', ['currency' => currency()]), 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
                 ],
                 rows: $rows,
                 totals: [null, null, null, null, $totalQty, $totalValue, $totalSale, $totalSale - $totalValue],
@@ -231,16 +232,16 @@ final class StatisticsController
 
         $document = new ExportDocument(
             filename: 'statistiques-capital-' . date('Ymd-Hi'),
-            title: 'Évolution du capital et des mouvements',
-            subtitle: 'Reconstitution quotidienne du capital valorisé au CUMP sur la période sélectionnée.',
+            title: t('Évolution du capital et des mouvements'),
+            subtitle: t('Reconstitution quotidienne du capital valorisé au CUMP sur la période sélectionnée.'),
             meta: $meta,
             summary: $summaryBoxes,
             columns: [
-                ['label' => 'Date', 'width' => 0.8, 'align' => 'center'],
-                ['label' => 'Capital (' . currency() . ')', 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Quantité', 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
-                ['label' => 'Entrées (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
-                ['label' => 'Sorties (' . currency() . ')', 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Date'), 'width' => 0.8, 'align' => 'center'],
+                ['label' => t('Capital (:currency)', ['currency' => currency()]), 'width' => 1.2, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Quantité'), 'width' => 0.8, 'align' => 'right', 'type' => 'qty'],
+                ['label' => t('Entrées (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
+                ['label' => t('Sorties (:currency)', ['currency' => currency()]), 'width' => 1.0, 'align' => 'right', 'type' => 'money'],
             ],
             rows: $rows,
             totals: [],
@@ -271,7 +272,7 @@ final class StatisticsController
     private function locationLabel(array $items, int $id): string
     {
         if ($id <= 0) {
-            return 'Tous les sites';
+            return t('Tous les sites');
         }
         foreach ($items as $item) {
             if ($item->id() === $id) {
@@ -279,7 +280,7 @@ final class StatisticsController
             }
         }
 
-        return 'Site #' . $id;
+        return t('Site #:id', ['id' => $id]);
     }
 
     /** @param array<int, Category>|array<int, Marque> $items */

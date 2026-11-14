@@ -26,44 +26,44 @@ $renderPager = static function (int $page, int $pages, int $total, callable $pag
 ?>
 <div class="page-head">
     <div>
-        <span class="eyebrow">Données de base</span>
-        <h2>Référentiels</h2>
-        <p>Marques, catégories, unités, fournisseurs et sites. Créez d’abord ces données avant les produits et les mouvements.</p>
+        <span class="eyebrow"><?= t('Données de base') ?></span>
+        <h2><?= t('Référentiels') ?></h2>
+        <p><?= t('Marques, catégories, unités, fournisseurs et sites. Créez d’abord ces données avant les produits et les mouvements.') ?></p>
     </div>
 </div>
 
 <div class="alert alert-premium alert-info-soft">
     <i class="bi bi-lightbulb"></i>
     <div>
-        <strong>Ordre recommandé :</strong> créez au minimum un site, une marque, une catégorie et une unité, puis un produit.
-        Les éléments désactivés ne sont plus proposés dans les formulaires mais restent historisés.
+        <strong><?= t('Ordre recommandé :') ?></strong> <?= t('créez au minimum un site, une marque, une catégorie et une unité, puis un produit.') ?>
+        <?= t('Les éléments désactivés ne sont plus proposés dans les formulaires mais restent historisés.') ?>
     </div>
 </div>
 
 <div class="ref-grid">
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Marques</h3><p><?= (int) $brandsTotal ?> marque(s)</p></div>
+            <div><h3><?= t('Marques') ?></h3><p><?= t(':count marque(s)', ['count' => (int) $brandsTotal]) ?></p></div>
             <span class="pill pill-muted"><i class="bi bi-tags"></i></span>
         </div>
         <?php if ($canManage): ?>
             <form class="ref-add-form" method="post" action="<?= url('/referentiels/brand') ?>">
                 <?= csrf_field() ?>
-                <input class="form-control" type="text" name="name" maxlength="80" placeholder="Nom de la marque" required>
+                <input class="form-control" type="text" name="name" maxlength="80" placeholder="<?= e(t('Nom de la marque')) ?>" required>
                 <button class="btn btn-accent" type="submit"><i class="bi bi-plus-lg"></i></button>
             </form>
         <?php endif; ?>
         <div class="ref-list">
-            <?php if ($brands === []): ?><p class="muted">Aucune marque.</p><?php endif; ?>
+            <?php if ($brands === []): ?><p class="muted"><?= t('Aucune marque.') ?></p><?php endif; ?>
             <?php foreach ($brands as $brand): ?>
                 <div class="ref-item">
                     <span><?= e($brand->name()) ?></span>
                     <div class="ref-item-actions">
-                        <span class="pill <?= $brand->isActive() ? 'pill-success' : 'pill-muted' ?>"><?= $brand->isActive() ? 'Active' : 'Inactive' ?></span>
+                        <span class="pill <?= $brand->isActive() ? 'pill-success' : 'pill-muted' ?>"><?= $brand->isActive() ? t('Active') : t('Inactive') ?></span>
                         <?php if ($canManage): ?>
                             <form method="post" action="<?= url('/referentiels/brand/' . $brand->id() . '/basculer') ?>">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-icon btn-sm" type="submit" title="<?= $brand->isActive() ? 'Désactiver' : 'Réactiver' ?>">
+                                <button class="btn btn-icon btn-sm" type="submit" title="<?= e($brand->isActive() ? t('Désactiver') : t('Réactiver')) ?>">
                                     <i class="bi <?= $brand->isActive() ? 'bi-toggle-on text-success' : 'bi-toggle-off' ?>"></i>
                                 </button>
                             </form>
@@ -77,27 +77,27 @@ $renderPager = static function (int $page, int $pages, int $total, callable $pag
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Catégories</h3><p><?= (int) $categoriesTotal ?> catégorie(s)</p></div>
+            <div><h3><?= t('Catégories') ?></h3><p><?= t(':count catégorie(s)', ['count' => (int) $categoriesTotal]) ?></p></div>
             <span class="pill pill-muted"><i class="bi bi-diagram-3"></i></span>
         </div>
         <?php if ($canManage): ?>
             <form class="ref-add-form" method="post" action="<?= url('/referentiels/category') ?>">
                 <?= csrf_field() ?>
-                <input class="form-control" type="text" name="name" maxlength="80" placeholder="Nom de la catégorie" required>
+                <input class="form-control" type="text" name="name" maxlength="80" placeholder="<?= e(t('Nom de la catégorie')) ?>" required>
                 <button class="btn btn-accent" type="submit"><i class="bi bi-plus-lg"></i></button>
             </form>
         <?php endif; ?>
         <div class="ref-list">
-            <?php if ($categories === []): ?><p class="muted">Aucune catégorie.</p><?php endif; ?>
+            <?php if ($categories === []): ?><p class="muted"><?= t('Aucune catégorie.') ?></p><?php endif; ?>
             <?php foreach ($categories as $category): ?>
                 <div class="ref-item">
                     <span><?= e($category->name()) ?></span>
                     <div class="ref-item-actions">
-                        <span class="pill <?= $category->isActive() ? 'pill-success' : 'pill-muted' ?>"><?= $category->isActive() ? 'Active' : 'Inactive' ?></span>
+                        <span class="pill <?= $category->isActive() ? 'pill-success' : 'pill-muted' ?>"><?= $category->isActive() ? t('Active') : t('Inactive') ?></span>
                         <?php if ($canManage): ?>
                             <form method="post" action="<?= url('/referentiels/category/' . $category->id() . '/basculer') ?>">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-icon btn-sm" type="submit" title="<?= $category->isActive() ? 'Désactiver' : 'Réactiver' ?>">
+                                <button class="btn btn-icon btn-sm" type="submit" title="<?= e($category->isActive() ? t('Désactiver') : t('Réactiver')) ?>">
                                     <i class="bi <?= $category->isActive() ? 'bi-toggle-on text-success' : 'bi-toggle-off' ?>"></i>
                                 </button>
                             </form>
@@ -111,19 +111,19 @@ $renderPager = static function (int $page, int $pages, int $total, callable $pag
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Unités</h3><p><?= count($units) ?> unité(s)</p></div>
+            <div><h3><?= t('Unités') ?></h3><p><?= t(':count unité(s)', ['count' => count($units)]) ?></p></div>
             <span class="pill pill-muted"><i class="bi bi-rulers"></i></span>
         </div>
         <?php if ($canManage): ?>
             <form class="ref-add-form" method="post" action="<?= url('/referentiels/unit') ?>">
                 <?= csrf_field() ?>
-                <input class="form-control" type="text" name="code" maxlength="20" placeholder="Code (ex. PCS)" required>
-                <input class="form-control" type="text" name="label" maxlength="60" placeholder="Libellé (ex. Pièce)" required>
+                <input class="form-control" type="text" name="code" maxlength="20" placeholder="<?= e(t('Code (ex. PCS)')) ?>" required>
+                <input class="form-control" type="text" name="label" maxlength="60" placeholder="<?= e(t('Libellé (ex. Pièce)')) ?>" required>
                 <button class="btn btn-accent" type="submit"><i class="bi bi-plus-lg"></i></button>
             </form>
         <?php endif; ?>
         <div class="ref-list">
-            <?php if ($units === []): ?><p class="muted">Aucune unité.</p><?php endif; ?>
+            <?php if ($units === []): ?><p class="muted"><?= t('Aucune unité.') ?></p><?php endif; ?>
             <?php foreach ($units as $unit): ?>
                 <div class="ref-item">
                     <span><span class="code-chip"><?= e($unit->code()) ?></span> <?= e($unit->label()) ?></span>
@@ -134,30 +134,30 @@ $renderPager = static function (int $page, int $pages, int $total, callable $pag
 
     <section class="panel">
         <div class="panel-head">
-            <div><h3>Sites</h3><p><?= count($locations) ?> site(s)</p></div>
+            <div><h3><?= t('Sites') ?></h3><p><?= t(':count site(s)', ['count' => count($locations)]) ?></p></div>
             <span class="pill pill-muted"><i class="bi bi-geo-alt"></i></span>
         </div>
         <?php if ($canManage): ?>
             <details class="ref-add">
-                <summary><i class="bi bi-plus-lg"></i> Ajouter un site</summary>
+                <summary><i class="bi bi-plus-lg"></i> <?= t('Ajouter un site') ?></summary>
                 <form class="ref-form-grid" method="post" action="<?= url('/referentiels/location') ?>">
                     <?= csrf_field() ?>
-                    <div class="field"><label>Code</label><input class="form-control" type="text" name="code" maxlength="20" placeholder="DEP-01" required></div>
-                    <div class="field"><label>Nom</label><input class="form-control" type="text" name="name" maxlength="120" placeholder="Dépôt principal" required></div>
-                    <div class="field"><label>Type</label>
+                    <div class="field"><label><?= t('Code') ?></label><input class="form-control" type="text" name="code" maxlength="20" placeholder="DEP-01" required></div>
+                    <div class="field"><label><?= t('Nom') ?></label><input class="form-control" type="text" name="name" maxlength="120" placeholder="<?= e(t('Dépôt principal')) ?>" required></div>
+                    <div class="field"><label><?= t('Type') ?></label>
                         <select class="form-select" name="type">
-                            <option value="depot">Dépôt</option>
-                            <option value="point_vente">Point de vente</option>
+                            <option value="depot"><?= t('Dépôt') ?></option>
+                            <option value="point_vente"><?= t('Point de vente') ?></option>
                         </select>
                     </div>
-                    <div class="field"><label>Téléphone</label><input class="form-control" type="text" name="phone" maxlength="30"></div>
-                    <div class="field field-wide"><label>Adresse</label><input class="form-control" type="text" name="address" maxlength="255"></div>
-                    <div class="field field-wide"><button class="btn btn-accent" type="submit"><i class="bi bi-save"></i> Enregistrer le site</button></div>
+                    <div class="field"><label><?= t('Téléphone') ?></label><input class="form-control" type="text" name="phone" maxlength="30"></div>
+                    <div class="field field-wide"><label><?= t('Adresse') ?></label><input class="form-control" type="text" name="address" maxlength="255"></div>
+                    <div class="field field-wide"><button class="btn btn-accent" type="submit"><i class="bi bi-save"></i> <?= t('Enregistrer le site') ?></button></div>
                 </form>
             </details>
         <?php endif; ?>
         <div class="ref-list">
-            <?php if ($locations === []): ?><p class="muted">Aucun site. Créez un dépôt ou un point de vente.</p><?php endif; ?>
+            <?php if ($locations === []): ?><p class="muted"><?= t('Aucun site. Créez un dépôt ou un point de vente.') ?></p><?php endif; ?>
             <?php foreach ($locations as $location): ?>
                 <div class="ref-item">
                     <div>
@@ -183,25 +183,25 @@ $renderPager = static function (int $page, int $pages, int $total, callable $pag
 
     <section class="panel ref-span">
         <div class="panel-head">
-            <div><h3>Fournisseurs</h3><p><?= (int) $suppliersTotal ?> fournisseur(s)</p></div>
+            <div><h3><?= t('Fournisseurs') ?></h3><p><?= t(':count fournisseur(s)', ['count' => (int) $suppliersTotal]) ?></p></div>
             <span class="pill pill-muted"><i class="bi bi-truck"></i></span>
         </div>
         <?php if ($canManage): ?>
             <details class="ref-add">
-                <summary><i class="bi bi-plus-lg"></i> Ajouter un fournisseur</summary>
+                <summary><i class="bi bi-plus-lg"></i> <?= t('Ajouter un fournisseur') ?></summary>
                 <form class="ref-form-grid" method="post" action="<?= url('/referentiels/supplier') ?>">
                     <?= csrf_field() ?>
-                    <div class="field"><label>Nom <span class="req">*</span></label><input class="form-control" type="text" name="name" maxlength="120" required></div>
+                    <div class="field"><label><?= t('Nom') ?> <span class="req">*</span></label><input class="form-control" type="text" name="name" maxlength="120" required></div>
                     <div class="field"><label>ICE</label><input class="form-control" type="text" name="ice" maxlength="30"></div>
-                    <div class="field"><label>Téléphone</label><input class="form-control" type="text" name="phone" maxlength="30"></div>
-                    <div class="field"><label>E-mail</label><input class="form-control" type="email" name="email" maxlength="160"></div>
-                    <div class="field field-wide"><label>Adresse</label><input class="form-control" type="text" name="address" maxlength="255"></div>
-                    <div class="field field-wide"><button class="btn btn-accent" type="submit"><i class="bi bi-save"></i> Enregistrer le fournisseur</button></div>
+                    <div class="field"><label><?= t('Téléphone') ?></label><input class="form-control" type="text" name="phone" maxlength="30"></div>
+                    <div class="field"><label><?= t('E-mail') ?></label><input class="form-control" type="email" name="email" maxlength="160"></div>
+                    <div class="field field-wide"><label><?= t('Adresse') ?></label><input class="form-control" type="text" name="address" maxlength="255"></div>
+                    <div class="field field-wide"><button class="btn btn-accent" type="submit"><i class="bi bi-save"></i> <?= t('Enregistrer le fournisseur') ?></button></div>
                 </form>
             </details>
         <?php endif; ?>
         <div class="ref-list">
-            <?php if ($suppliers === []): ?><p class="muted">Aucun fournisseur. Il est optionnel pour les entrées de stock initial.</p><?php endif; ?>
+            <?php if ($suppliers === []): ?><p class="muted"><?= t('Aucun fournisseur. Il est optionnel pour les entrées de stock initial.') ?></p><?php endif; ?>
             <?php foreach ($suppliers as $supplier): ?>
                 <div class="ref-item">
                     <div>
