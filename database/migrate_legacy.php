@@ -103,6 +103,56 @@ function normalize(string $value): string
     return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $value) ?? $value));
 }
 
+/**
+ * ClAc normalisAce pour rapprocher un produit venant de plusieurs anciennes
+ * bases (suivi_stock et gestion_credits partagent le meme catalogue).
+ * Exemple : "PNEU 225/70 R15" et "pneu 225/70r15" donnent la meme clAc.
+ */
+function product_key_text(string $value): string
+{
+    $value = trim($value);
+    if (function_exists('iconv')) {
+        $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($converted !== false) {
+            $value = $converted;
+        }
+    }
+    $value = mb_strtolower($value);
+    $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? $value;
+    return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+}
+
+function register_product(array &$index, int $id, ?string $sku, ?string $barcode, string $designation, int $brandId): void
+{
+    $sku = $sku !== null ? mb_strtolower(trim($sku)) : '';
+    $barcode = $barcode !== null ? mb_strtolower(trim($barcode)) : '';
+    if ($sku !== '') {
+        $index['sku'][$sku] = $id;
+    }
+    if ($barcode !== '') {
+        $index['barcode'][$barcode] = $id;
+    }
+    $index['key'][product_key_text($designation) . '|' . $brandId] = $id;
+}
+
+/**
+ * Retrouve un produit dAcsjA� prAcsent dans la base cible.
+ * PrioritAcs : code-barres, puis SKU, puis designation + marque.
+ */
+function find_product(array $index, ?string $sku, ?string $barcode, string $designation, int $brandId): ?int
+{
+    $barcode = $barcode !== null ? mb_strtolower(trim($barcode)) : '';
+    if ($barcode !== '' && isset($index['barcode'][$barcode])) {
+        return (int) $index['barcode'][$barcode];
+    }
+    $sku = $sku !== null ? mb_strtolower(trim($sku)) : '';
+    if ($sku !== '' && isset($index['sku'][$sku])) {
+        return (int) $index['sku'][$sku];
+    }
+    $key = product_key_text($designation) . '|' . $brandId;
+    return isset($index['key'][$key]) ? (int) $index['key'][$key] : null;
+}
+
 /* -------------------------------------------------------------------------
 | Vérifications
 |-------------------------------------------------------------------------*/
@@ -129,7 +179,11 @@ $creditsDb = $pickDb([
     'gestion_credits',
 ]);
 $stockDb = $pickDb([getenv('LEGACY_STOCK_DB') ?: null, 'suivi_stock']);
-$chequesDb = $pickDb([getenv('LEGACY_CHEQUES_DB') ?: null, 'gestion_cheques']);
+$chequesDb = $pickDb([
+    getenv('LEGACY_CHEQUES_DB') ?: null,
+    'gestion_cheques',
+    'gestion_cheques_effets',
+]);
 
 echo "=== Migration vers la base unifiée ===\n";
 echo 'Stock    : ' . ($stockDb ?? 'absente') . "\n";
@@ -150,7 +204,8 @@ if ($force) {
         'inventory_lines', 'inventory_sessions', 'stock_movements', 'stock_levels',
         'stock_document_lines', 'stock_documents', 'login_attempts', 'audit_logs',
         'document_sequences', 'settings', 'products', 'units', 'categories',
-        'brands', 'clients', 'users', 'locations', 'roles',
+        'brands', 'clients', 'beneficiaire', 'personne', 'suppliers',
+        'users', 'locations', 'roles',
     ];
     foreach ($tables as $table) {
         $exists = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($table))->fetchColumn();
@@ -406,6 +461,17 @@ if ($stockDb !== null) {
     }
 }
 
+// CatAcgories du module CrAcdits (schAcma Laravel) : mAMame table cible.
+$creditsCategoryMap = [];
+if ($creditsDb !== null && src_exists($server, $creditsDb, 'categories')) {
+    foreach (src_rows($server, $creditsDb, 'categories') as $row) {
+        $creditsCategoryMap[(int) $row['id']] = ensure_category(
+            $pdo,
+            (string) pick($row, ['name', 'name_fr', 'label'], 'Général')
+        );
+    }
+}
+
 $unitMap = [];
 if ($stockDb !== null) {
     foreach (src_rows($server, $stockDb, 'units') as $row) {
@@ -447,8 +513,14 @@ $insertBeneficiaire = $pdo->prepare(
 
 if ($creditsDb !== null && src_exists($server, $creditsDb, 'clients')) {
     foreach (src_rows($server, $creditsDb, 'clients') as $row) {
+        $sourceType = strtolower(trim((string) ($row['type'] ?? '')));
+        $nature = in_array($sourceType, ['company', 'societe', 'société', 'entreprise'], true)
+            ? 'SOCIETE'
+            : 'PERSONNE';
         $insertClient->execute([
-            (string) $row['name'], 'PERSONNE', $row['phone'] ?? null, $row['email'] ?? null,
+            (string) pick($row, ['name', 'name_fr', 'nom'], 'Client'),
+            $nature,
+            $row['phone'] ?? null, $row['email'] ?? null,
             $row['address'] ?? null, $row['ice'] ?? null,
             (float) ($row['credit_limit'] ?? 0), is_true($row['is_active'] ?? 1) ? 1 : 0,
             is_true($row['is_passenger'] ?? 0) ? 1 : 0, $row['notes'] ?? null,
@@ -483,6 +555,17 @@ echo 'Clients importés : ' . count($clientMap) . "\n";
 |-------------------------------------------------------------------------*/
 
 $productMap = [];
+$productIndex = ['sku' => [], 'barcode' => [], 'key' => []];
+foreach ($pdo->query('SELECT id, sku, barcode, designation, brand_id FROM products') as $existing) {
+    register_product(
+        $productIndex,
+        (int) $existing['id'],
+        $existing['sku'] !== null ? (string) $existing['sku'] : null,
+        $existing['barcode'] !== null ? (string) $existing['barcode'] : null,
+        (string) $existing['designation'],
+        (int) $existing['brand_id']
+    );
+}
 $insertProduct = $pdo->prepare(
     'INSERT INTO products (sku, barcode, designation, description, brand_id, category_id, unit_id,
         purchase_cost, sale_price, avg_sale_price, min_stock, active, created_at, updated_at)
@@ -491,23 +574,34 @@ $insertProduct = $pdo->prepare(
 
 if ($stockDb !== null) {
     foreach (src_rows($server, $stockDb, 'products') as $row) {
-        $insertProduct->execute([
-            $row['sku'] ?? null,
-            $row['barcode'] ?? null,
-            (string) $row['designation'],
-            $row['description'] ?? null,
-            $brandMap['stock:' . (int) $row['brand_id']] ?? $defaultBrandId,
-            $categoryMap[(int) $row['category_id']] ?? $defaultCategoryId,
-            $unitMap[(int) $row['unit_id']] ?? $defaultUnitId,
-            (float) ($row['purchase_cost'] ?? 0),
-            (float) ($row['sale_price'] ?? 0),
-            $row['avg_sale_price'] ?? null,
-            (float) ($row['min_stock'] ?? 0),
-            is_true($row['active'] ?? 1) ? 1 : 0,
-            $row['created_at'] ?? date('Y-m-d H:i:s'),
-            $row['updated_at'] ?? null,
-        ]);
-        $productMap['stock:' . (int) $row['id']] = (int) $pdo->lastInsertId();
+        $designation = (string) $row['designation'];
+        $brandId = $brandMap['stock:' . (int) $row['brand_id']] ?? $defaultBrandId;
+        $sku = isset($row['sku']) && trim((string) $row['sku']) !== '' ? (string) $row['sku'] : null;
+        $barcode = isset($row['barcode']) && trim((string) $row['barcode']) !== '' ? (string) $row['barcode'] : null;
+
+        // Produit partagAcs suivi_stock / gestion_credits : on rAcsutilise la fiche existante.
+        $productId = find_product($productIndex, $sku, $barcode, $designation, $brandId);
+        if ($productId === null) {
+            $insertProduct->execute([
+                $sku,
+                $barcode,
+                $designation,
+                $row['description'] ?? null,
+                $brandId,
+                $categoryMap[(int) $row['category_id']] ?? $defaultCategoryId,
+                $unitMap[(int) $row['unit_id']] ?? $defaultUnitId,
+                (float) ($row['purchase_cost'] ?? 0),
+                (float) ($row['sale_price'] ?? 0),
+                $row['avg_sale_price'] ?? null,
+                (float) ($row['min_stock'] ?? 0),
+                is_true($row['active'] ?? 1) ? 1 : 0,
+                $row['created_at'] ?? date('Y-m-d H:i:s'),
+                $row['updated_at'] ?? null,
+            ]);
+            $productId = (int) $pdo->lastInsertId();
+            register_product($productIndex, $productId, $sku, $barcode, $designation, $brandId);
+        }
+        $productMap['stock:' . (int) $row['id']] = $productId;
     }
 }
 
@@ -517,23 +611,41 @@ if ($creditsDb !== null && src_exists($server, $creditsDb, 'products')) {
         $brandId = $brandName !== ''
             ? ensure_brand($pdo, $brandName)
             : ($brandMap['credits:' . (int) ($row['brand_id'] ?? 0)] ?? $defaultBrandId);
-        $insertProduct->execute([
-            $row['sku'] ?? null,
-            $row['barcode'] ?? null,
-            (string) pick($row, ['name_fr', 'name', 'name_ar', 'designation'], 'Article'),
-            $row['description'] ?? null,
-            $brandId,
-            $defaultCategoryId,
-            $defaultUnitId,
-            (float) pick($row, ['purchase_price', 'purchase_cost'], 0),
-            (float) pick($row, ['sale_price', 'price'], 0),
-            null,
-            (float) pick($row, ['stock_min', 'min_stock'], 0),
-            is_true($row['is_active'] ?? 1) ? 1 : 0,
-            $row['created_at'] ?? date('Y-m-d H:i:s'),
-            $row['updated_at'] ?? null,
-        ]);
-        $productMap['credits:' . (int) $row['id']] = (int) $pdo->lastInsertId();
+        $designation = (string) pick($row, ['name_fr', 'name', 'name_ar', 'designation'], 'Article');
+        $sku = isset($row['sku']) && trim((string) $row['sku']) !== '' ? (string) $row['sku'] : null;
+        $barcode = isset($row['barcode']) && trim((string) $row['barcode']) !== '' ? (string) $row['barcode'] : null;
+
+        // MAame fiche que celle crAcsAce par suivi_stock ? On la partage.
+        $productId = find_product($productIndex, $sku, $barcode, $designation, $brandId);
+        if ($productId === null) {
+            $creditsCategoryId = $creditsCategoryMap[(int) ($row['category_id'] ?? 0)] ?? $defaultCategoryId;
+            $unitRaw = trim((string) pick($row, ['unit', 'unit_code'], ''));
+            $creditsUnitId = $defaultUnitId;
+            if ($unitRaw !== '') {
+                $creditsUnitId = isset($unitMap[(int) $unitRaw])
+                    ? $unitMap[(int) $unitRaw]
+                    : ensure_unit($pdo, mb_strtoupper($unitRaw), $unitRaw);
+            }
+            $insertProduct->execute([
+                $sku,
+                $barcode,
+                $designation,
+                $row['description'] ?? null,
+                $brandId,
+                $creditsCategoryId,
+                $creditsUnitId,
+                (float) pick($row, ['purchase_price', 'purchase_cost'], 0),
+                (float) pick($row, ['sale_price', 'price'], 0),
+                null,
+                (float) pick($row, ['stock_min', 'min_stock'], 0),
+                is_true($row['is_active'] ?? 1) ? 1 : 0,
+                $row['created_at'] ?? date('Y-m-d H:i:s'),
+                $row['updated_at'] ?? null,
+            ]);
+            $productId = (int) $pdo->lastInsertId();
+            register_product($productIndex, $productId, $sku, $barcode, $designation, $brandId);
+        }
+        $productMap['credits:' . (int) $row['id']] = $productId;
     }
 }
 echo 'Produits importés : ' . count($productMap) . "\n";
@@ -659,12 +771,27 @@ if ($creditsDb !== null) {
     );
     foreach (src_rows($server, $creditsDb, 'sales') as $row) {
         $clientId = isset($row['client_id']) ? ($clientMap['credits:' . (int) $row['client_id']] ?? null) : null;
+        $total = (float) ($row['total'] ?? 0);
+        $paid = (float) pick($row, ['paid', 'paid_amount'], 0);
+        $method = strtolower((string) pick($row, ['payment_method', 'type'], 'cash'));
+        $sourceStatus = strtolower(trim((string) ($row['status'] ?? '')));
+        if (in_array($sourceStatus, ['paid', 'credit', 'partial'], true)) {
+            $status = $sourceStatus;
+        } elseif ($total > 0 && $paid >= $total - 0.009) {
+            $status = 'paid';
+        } elseif ($paid > 0) {
+            $status = 'partial';
+        } elseif ($method === 'credit') {
+            $status = 'credit';
+        } else {
+            $status = 'paid';
+        }
         $insertSale->execute([
             $clientId,
             isset($row['user_id']) ? ($userMap['credits:' . (int) $row['user_id']] ?? $adminId) : $adminId,
             $row['date'], (float) ($row['subtotal'] ?? 0), (float) ($row['discount'] ?? 0),
-            (float) ($row['total'] ?? 0), (float) pick($row, ['paid', 'paid_amount'], 0),
-            $row['payment_method'] ?? 'cash', $row['status'] ?? 'paid', pick($row, ['note', 'notes'], null),
+            $total, $paid,
+            $method, $status, pick($row, ['note', 'notes'], null),
             $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $saleMap[(int) $row['id']] = (int) $pdo->lastInsertId();
@@ -708,6 +835,17 @@ if ($creditsDb !== null) {
         $creditAmount = (float) pick($row, ['amount', 'principal', 'total_due'], 0);
         $creditPaid   = (float) pick($row, ['paid', 'amount_paid'], 0);
         $creditRemain = (float) pick($row, ['remaining', 'balance'], $creditAmount - $creditPaid);
+        $sourceStatus = strtolower(trim((string) ($row['status'] ?? '')));
+        if (in_array($sourceStatus, ['paid', 'settled', 'closed', 'completed'], true)) {
+            $creditStatus = 'paid';
+        } elseif (in_array($sourceStatus, ['open', 'active', 'pending', 'partial'], true)) {
+            $creditStatus = 'open';
+        } else {
+            $creditStatus = $creditRemain <= 0.009 ? 'paid' : 'open';
+        }
+        if ($creditRemain <= 0.009) {
+            $creditStatus = 'paid';
+        }
         $pdo->prepare(
             'INSERT INTO credits (sale_id, client_id, amount, paid, remaining, due_date, status, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -715,20 +853,25 @@ if ($creditsDb !== null) {
             $saleMap[(int) $row['sale_id']],
             $clientMap['credits:' . (int) $row['client_id']],
             $creditAmount, $creditPaid, $creditRemain,
-            $row['due_date'] ?? null, $row['status'] ?? 'open', $row['created_at'] ?? date('Y-m-d H:i:s'),
+            $row['due_date'] ?? null, $creditStatus, $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
         $creditMap[(int) $row['id']] = (int) $pdo->lastInsertId();
     }
 
     $paymentMap = [];
     foreach (src_rows($server, $creditsDb, 'payments') as $row) {
+        $paymentUser = pick($row, ['user_id', 'received_by'], null);
+        $paymentDate = (string) pick($row, ['date', 'paid_at'], date('Y-m-d'));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $paymentDate, $m)) {
+            $paymentDate = $m[0];
+        }
         $pdo->prepare(
             'INSERT INTO payments (client_id, user_id, date, amount, method, note, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             isset($row['client_id']) ? ($clientMap['credits:' . (int) $row['client_id']] ?? null) : null,
-            isset($row['user_id']) ? ($userMap['credits:' . (int) $row['user_id']] ?? $adminId) : $adminId,
-            pick($row, ['date', 'paid_at'], date('Y-m-d')),
+            $paymentUser !== null ? ($userMap['credits:' . (int) $paymentUser] ?? $adminId) : $adminId,
+            $paymentDate,
             (float) ($row['amount'] ?? 0), $row['method'] ?? 'cash', pick($row, ['note', 'notes'], null),
             $row['created_at'] ?? date('Y-m-d H:i:s'),
         ]);

@@ -19,7 +19,8 @@ declare(strict_types=1);
  *
  * Ce qui est fusionné :
  *   - marques / catégories / unités / emplacements / fournisseurs
- *   - clients (clients crédits + bénéficiaires chèques), dédupliqués par nom
+ *   - clients (clients crédits), dédupliqués par nom
+ *   - bénéficiaires de chèques, dans leur table `beneficiaire` séparée
  *   - produits (catalogue crédits + catalogue stock), dédupliqués par désignation
  *   - chèques : personnes, carnets, documents
  *   - crédits : ventes, lignes de vente, crédits
@@ -268,14 +269,77 @@ function insert_client(PDO $pdo, array $c): int
     bump('clients ajoutés');
     return (int) $pdo->lastInsertId();
 }
-function find_product(PDO $pdo, string $designation, ?int $brandId = null): ?int
+
+function find_beneficiaire(PDO $pdo, string $nom): ?int
 {
-    $sql = 'SELECT id FROM products WHERE LOWER(TRIM(designation)) = ? AND '
-        . ($brandId === null ? 'brand_id IS NULL' : 'brand_id = ?') . ' LIMIT 1';
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($brandId === null ? [norm($designation)] : [norm($designation), $brandId]);
+    $stmt = $pdo->prepare('SELECT id FROM beneficiaire WHERE LOWER(TRIM(nom)) = ? LIMIT 1');
+    $stmt->execute([norm($nom)]);
     $id = $stmt->fetchColumn();
     return $id === false ? null : (int) $id;
+}
+function insert_beneficiaire(PDO $pdo, array $b): int
+{
+    $pdo->prepare(
+        'INSERT INTO beneficiaire (nom, type, telephone, email, adresse, ice, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )->execute([
+        $b['nom'], $b['type'], $b['telephone'], $b['email'], $b['adresse'], $b['ice'], $b['created_at'],
+    ]);
+    bump('bénéficiaires ajoutés');
+    return (int) $pdo->lastInsertId();
+}
+
+/** Clé produit normalisée (identique à database/migrate_legacy.php). */
+function merge_product_key(string $value): string
+{
+    $value = trim($value);
+    if (function_exists('iconv')) {
+        $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($converted !== false) {
+            $value = $converted;
+        }
+    }
+    $value = mb_strtolower($value);
+    $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? $value;
+    return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+}
+
+function product_index(PDO $pdo): void
+{
+    if ($GLOBALS['merge_product_index_ready'] ?? false) {
+        return;
+    }
+    $index = ['key' => [], 'sku' => [], 'barcode' => []];
+    foreach ($pdo->query('SELECT id, sku, barcode, designation, brand_id FROM products') as $p) {
+        $index['key'][merge_product_key((string) $p['designation']) . '|' . (int) $p['brand_id']] = (int) $p['id'];
+        if ($p['sku'] !== null && trim((string) $p['sku']) !== '') {
+            $index['sku'][mb_strtolower(trim((string) $p['sku']))] = (int) $p['id'];
+        }
+        if ($p['barcode'] !== null && trim((string) $p['barcode']) !== '') {
+            $index['barcode'][mb_strtolower(trim((string) $p['barcode']))] = (int) $p['id'];
+        }
+    }
+    $GLOBALS['merge_product_index'] = $index;
+    $GLOBALS['merge_product_index_ready'] = true;
+}
+
+function register_product(int $id, ?string $sku, ?string $barcode, string $designation, int $brandId): void
+{
+    product_index($GLOBALS['merge_pdo']);
+    $GLOBALS['merge_product_index']['key'][merge_product_key($designation) . '|' . $brandId] = $id;
+    if ($sku !== null && trim($sku) !== '') {
+        $GLOBALS['merge_product_index']['sku'][mb_strtolower(trim($sku))] = $id;
+    }
+    if ($barcode !== null && trim($barcode) !== '') {
+        $GLOBALS['merge_product_index']['barcode'][mb_strtolower(trim($barcode))] = $id;
+    }
+}
+
+function find_product(PDO $pdo, string $designation, ?int $brandId = null): ?int
+{
+    $GLOBALS['merge_pdo'] = $pdo;
+    product_index($pdo);
+    return $GLOBALS['merge_product_index']['key'][merge_product_key($designation) . '|' . ($brandId ?? 0)] ?? null;
 }
 function insert_product(PDO $pdo, array $p): int
 {
@@ -374,7 +438,8 @@ try {
     /* ----------------------------------------------------------------
     | 2. Clients
     |----------------------------------------------------------------*/
-    $clientMap = [];       // "credits:ID" / "cheques:ID" => target id
+    $clientMap = [];       // "credits:ID" => id dans la table clients
+    $beneficiaireMap = []; // "cheques:ID" => id dans la table beneficiaire
 
     // Client passager.
     $passengerId = (int) ($pdo->query('SELECT id FROM clients WHERE is_passenger = 1 ORDER BY id LIMIT 1')->fetchColumn() ?: 0);
@@ -414,19 +479,18 @@ try {
     if (db_ok($pdo, $chequesDb)) {
         foreach (rows($pdo, $chequesDb, 'beneficiaire') as $row) {
             $name = trim((string) $row['nom']);
-            $existing = find_client($pdo, $name);
+            $existing = find_beneficiaire($pdo, $name);
             if ($existing !== null) {
-                $clientMap['cheques:' . (int) $row['id']] = $existing;
+                $beneficiaireMap['cheques:' . (int) $row['id']] = $existing;
                 continue;
             }
             $type = strtoupper((string) ($row['type'] ?? 'PERSONNE')) === 'SOCIETE' ? 'SOCIETE' : 'PERSONNE';
-            $id = insert_client($pdo, [
-                'name' => $name, 'phone' => $row['telephone'] ?? null, 'email' => $row['email'] ?? null,
-                'address' => $row['adresse'] ?? null, 'ice' => $row['ice'] ?? null, 'type' => $type,
-                'credit_limit' => 0, 'is_active' => 1, 'is_passenger' => 0, 'notes' => null,
-                'created_at' => ts($row['created_at'] ?? null), 'updated_at' => null,
+            $id = insert_beneficiaire($pdo, [
+                'nom' => $name, 'type' => $type, 'telephone' => $row['telephone'] ?? null,
+                'email' => $row['email'] ?? null, 'adresse' => $row['adresse'] ?? null,
+                'ice' => $row['ice'] ?? null, 'created_at' => ts($row['created_at'] ?? null),
             ]);
-            $clientMap['cheques:' . (int) $row['id']] = $id;
+            $beneficiaireMap['cheques:' . (int) $row['id']] = $id;
         }
     }
 
@@ -455,13 +519,14 @@ try {
                 'active' => (int) ($row['active'] ?? 1) ? 1 : 0,
                 'created_at' => ts($row['created_at'] ?? null), 'updated_at' => $row['updated_at'] ?? null,
             ]);
+            register_product($id, $row['sku'] ?? null, $row['barcode'] ?? null, $designation, $brandId);
             $productMap['stock:' . (int) $row['id']] = $id;
         }
     }
 
     if (db_ok($pdo, $creditsDb)) {
         foreach (rows($pdo, $creditsDb, 'products') as $row) {
-            $designation = trim((string) ($row['name_fr'] ?? ''));
+            $designation = trim((string) ($row['name_fr'] ?? $row['name'] ?? $row['designation'] ?? ''));
             if ($designation === '') {
                 $designation = trim((string) ($row['name_ar'] ?? '')) ?: ('ARTICLE-' . (int) $row['id']);
             }
@@ -478,11 +543,13 @@ try {
                 'sku' => $row['sku'] ?? null, 'barcode' => $row['barcode'] ?? null, 'designation' => $designation,
                 'description' => $row['description'] ?? null, 'brand_id' => $brandId,
                 'category_id' => $defaultCategoryId, 'unit_id' => $defaultUnitId,
-                'purchase_cost' => money($row['purchase_price'] ?? 0), 'sale_price' => money($row['sale_price'] ?? 0),
-                'avg_sale_price' => null, 'min_stock' => money($row['stock_min'] ?? 0),
-                'active' => (int) ($row['is_active'] ?? 1) ? 1 : 0,
+                'purchase_cost' => money($row['purchase_price'] ?? $row['purchase_cost'] ?? 0),
+                'sale_price' => money($row['sale_price'] ?? $row['price'] ?? 0),
+                'avg_sale_price' => null, 'min_stock' => money($row['stock_min'] ?? $row['min_stock'] ?? 0),
+                'active' => (int) ($row['is_active'] ?? $row['active'] ?? 1) ? 1 : 0,
                 'created_at' => ts($row['created_at'] ?? null), 'updated_at' => $row['updated_at'] ?? null,
             ]);
+            register_product($id, $row['sku'] ?? null, $row['barcode'] ?? null, $designation, $brandId);
             $productMap['credits:' . (int) $row['id']] = $id;
         }
     }
@@ -532,12 +599,23 @@ try {
         }
 
         foreach (rows($pdo, $chequesDb, 'document_paiement') as $row) {
-            if (!isset($clientMap['cheques:' . (int) $row['beneficiaire_id']])) {
+            if (!isset($beneficiaireMap['cheques:' . (int) $row['beneficiaire_id']])) {
                 continue;
             }
             $numero = (string) $row['numero'];
-            $stmt = $pdo->prepare('SELECT id FROM cheques_documents WHERE numero = ? LIMIT 1');
-            $stmt->execute([$numero]);
+            $mappedBeneficiaire = $beneficiaireMap['cheques:' . (int) $row['beneficiaire_id']];
+            $mappedPersonne = isset($row['personne_id']) ? ($personneMap[(int) $row['personne_id']] ?? null) : null;
+            $mappedCarnet = isset($row['carnet_id']) ? ($carnetMap[(int) $row['carnet_id']] ?? null) : null;
+            $montant = money($row['montant'] ?? 0);
+
+            // Un même numéro peut exister dans deux carnets différents :
+            // on dédoublonne sur (numéro, bénéficiaire, carnet, montant).
+            $stmt = $pdo->prepare(
+                'SELECT id FROM cheques_documents
+                 WHERE numero = ? AND beneficiaire_id = ? AND carnet_id <=> ? AND montant = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$numero, $mappedBeneficiaire, $mappedCarnet, $montant]);
             $id = $stmt->fetchColumn();
             if ($id === false) {
                 $pdo->prepare(
@@ -546,11 +624,8 @@ try {
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $row['banque'] ?? null, $row['date_emission'] ?? null, $row['date_echeance'] ?? null,
-                    money($row['montant'] ?? 0), $numero, $row['remarque'] ?? null, (string) ($row['type'] ?? 'CHEQUE'),
-                    $clientMap['cheques:' . (int) $row['beneficiaire_id']],
-                    isset($row['personne_id']) ? ($personneMap[(int) $row['personne_id']] ?? null) : null,
-                    $row['carnet'] ?? null,
-                    isset($row['carnet_id']) ? ($carnetMap[(int) $row['carnet_id']] ?? null) : null,
+                    $montant, $numero, $row['remarque'] ?? null, (string) ($row['type'] ?? 'CHEQUE'),
+                    $mappedBeneficiaire, $mappedPersonne, $row['carnet'] ?? null, $mappedCarnet,
                     $row['date_reglement'] ?? null, (int) ($row['regle'] ?? 0) ? 1 : 0, (int) ($row['rejete'] ?? 0) ? 1 : 0,
                     ts($row['created_at'] ?? null), $row['updated_at'] ?? null,
                 ]);
@@ -573,8 +648,21 @@ try {
                 continue;
             }
             $clientId = isset($row['client_id']) ? ($clientMap['credits:' . (int) $row['client_id']] ?? null) : null;
-            $paid = money($row['paid_amount'] ?? 0);
+            $paid = money($row['paid_amount'] ?? $row['paid'] ?? 0);
             $total = money($row['total'] ?? 0);
+
+            // Rapprochement par clé naturelle si la table import_map est vide.
+            if ($clientId !== null) {
+                $findSale = $pdo->prepare('SELECT id FROM sales WHERE client_id = ? AND date = ? AND total = ? AND paid = ? LIMIT 1');
+                $findSale->execute([$clientId, (string) $row['date'], $total, $paid]);
+                $existingSale = $findSale->fetchColumn();
+                if ($existingSale !== false) {
+                    $saleMap[(int) $row['id']] = (int) $existingSale;
+                    map_set($pdo, $creditsDb, 'sale', (string) $row['id'], (int) $existingSale);
+                    continue;
+                }
+            }
+
             $status = (string) ($row['status'] ?? '');
             if ($status === '' || $status === 'unpaid') {
                 $status = ($paid >= $total && $total > 0) ? 'paid' : (($paid > 0) ? 'partial' : 'credit');
@@ -590,8 +678,8 @@ try {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $clientId, $adminId, (string) $row['date'], money($row['subtotal'] ?? 0), money($row['discount'] ?? 0),
-                $total, $paid, ($row['type'] ?? 'credit') === 'credit' ? 'credit' : 'cash', $status,
-                $row['notes'] ?? null, ts($row['created_at'] ?? null),
+                $total, $paid, ($row['type'] ?? $row['payment_method'] ?? 'cash') === 'credit' ? 'credit' : 'cash', $status,
+                $row['notes'] ?? $row['note'] ?? null, ts($row['created_at'] ?? null),
             ]);
             $saleId = (int) $pdo->lastInsertId();
             $saleMap[(int) $row['id']] = $saleId;
@@ -616,11 +704,25 @@ try {
                 $brandName = (string) ($prow['name'] ?? '');
                 $productName = (string) ($prow['designation'] ?? 'Article');
             }
+            $qty = money($row['quantity'] ?? $row['qty'] ?? 1);
+            $unitPrice = money($row['unit_price'] ?? 0);
+            $lineTotal = money($row['total'] ?? 0);
+
+            $findLine = $pdo->prepare(
+                'SELECT id FROM sale_items WHERE sale_id = ? AND product_id <=> ? AND qty = ? AND unit_price = ? AND total = ? LIMIT 1'
+            );
+            $findLine->execute([$saleMap[(int) $row['sale_id']], $productId, $qty, $unitPrice, $lineTotal]);
+            $existingLine = $findLine->fetchColumn();
+            if ($existingLine !== false) {
+                map_set($pdo, $creditsDb, 'sale_item', (string) $row['id'], (int) $existingLine);
+                continue;
+            }
+
             $pdo->prepare(
                 'INSERT INTO sale_items (sale_id, product_id, brand, product_name, qty, unit_price, total) VALUES (?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $saleMap[(int) $row['sale_id']], $productId, $brandName, $productName,
-                money($row['quantity'] ?? 1), money($row['unit_price'] ?? 0), money($row['total'] ?? 0),
+                $qty, $unitPrice, $lineTotal,
             ]);
             map_set($pdo, $creditsDb, 'sale_item', (string) $row['id'], (int) $pdo->lastInsertId());
             bump('lignes de vente ajoutées');
@@ -635,10 +737,20 @@ try {
                 continue;
             }
             $clientId = $clientMap['credits:' . (int) $row['client_id']] ?? null;
-            $amount = money($row['principal'] ?? ($row['total_due'] ?? 0));
-            $paid = money($row['amount_paid'] ?? 0);
-            $remaining = money($row['balance'] ?? max(0, $amount - $paid));
+            $amount = money($row['principal'] ?? $row['total_due'] ?? $row['amount'] ?? 0);
+            $paid = money($row['amount_paid'] ?? $row['paid'] ?? 0);
+            $remaining = money($row['balance'] ?? $row['remaining'] ?? max(0, $amount - $paid));
             $status = ($remaining <= 0.0001) ? 'paid' : 'open';
+
+            // La table cible a une clé unique sur sale_id.
+            $findCredit = $pdo->prepare('SELECT id FROM credits WHERE sale_id = ? LIMIT 1');
+            $findCredit->execute([$saleMap[(int) $row['sale_id']]]);
+            $existingCredit = $findCredit->fetchColumn();
+            if ($existingCredit !== false) {
+                map_set($pdo, $creditsDb, 'credit', (string) $row['id'], (int) $existingCredit);
+                continue;
+            }
+
             $pdo->prepare(
                 'INSERT INTO credits (sale_id, client_id, amount, paid, remaining, due_date, status, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -648,6 +760,73 @@ try {
             ]);
             map_set($pdo, $creditsDb, 'credit', (string) $row['id'], (int) $pdo->lastInsertId());
             bump('crédits ajoutés');
+        }
+
+        // Paiements (schéma Laravel : paid_at/received_by, ou ancien : date/user_id).
+        $paymentMap = [];
+        foreach (rows($pdo, $creditsDb, 'payments') as $row) {
+            $mapped = map_get($pdo, $creditsDb, 'payment', (string) $row['id'], 'payments');
+            if ($mapped !== null) {
+                $paymentMap[(int) $row['id']] = $mapped;
+                continue;
+            }
+            $clientId = isset($row['client_id']) ? ($clientMap['credits:' . (int) $row['client_id']] ?? null) : null;
+            if ($clientId === null) {
+                continue;
+            }
+            $paidAt = (string) ($row['date'] ?? $row['paid_at'] ?? date('Y-m-d'));
+            if (preg_match('/^\d{4}-\d{2}-\d{2}/', $paidAt, $m)) {
+                $paidAt = $m[0];
+            }
+            $amount = money($row['amount'] ?? 0);
+            $method = (string) ($row['method'] ?? 'cash');
+
+            $findPayment = $pdo->prepare('SELECT id FROM payments WHERE client_id = ? AND date = ? AND amount = ? AND method = ? LIMIT 1');
+            $findPayment->execute([$clientId, $paidAt, $amount, $method]);
+            $existingPayment = $findPayment->fetchColumn();
+            if ($existingPayment !== false) {
+                $paymentMap[(int) $row['id']] = (int) $existingPayment;
+                map_set($pdo, $creditsDb, 'payment', (string) $row['id'], (int) $existingPayment);
+                continue;
+            }
+
+            $userId = (int) ($row['user_id'] ?? $row['received_by'] ?? $adminId);
+            $pdo->prepare(
+                'INSERT INTO payments (client_id, user_id, date, amount, method, note, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            )->execute([
+                $clientId, $userId ?: $adminId, $paidAt, $amount,
+                $method, $row['notes'] ?? $row['note'] ?? null,
+                ts($row['created_at'] ?? null),
+            ]);
+            $paymentId = (int) $pdo->lastInsertId();
+            $paymentMap[(int) $row['id']] = $paymentId;
+            map_set($pdo, $creditsDb, 'payment', (string) $row['id'], $paymentId);
+            bump('paiements ajoutés');
+        }
+
+        // Affectations paiement -> crédit (le schéma Laravel passe par installments).
+        $installmentCredit = [];
+        foreach (rows($pdo, $creditsDb, 'installments') as $ins) {
+            $installmentCredit[(int) $ins['id']] = (int) ($ins['credit_id'] ?? 0);
+        }
+        foreach (rows($pdo, $creditsDb, 'payment_allocations') as $row) {
+            $paymentId = $paymentMap[(int) ($row['payment_id'] ?? 0)] ?? null;
+            $legacyCreditId = isset($row['credit_id'])
+                ? (int) $row['credit_id']
+                : ($installmentCredit[(int) ($row['installment_id'] ?? 0)] ?? 0);
+            $creditId = map_get($pdo, $creditsDb, 'credit', (string) $legacyCreditId, 'credits');
+            if ($paymentId === null || $creditId === null) {
+                continue;
+            }
+            $stmt = $pdo->prepare('SELECT id FROM payment_allocations WHERE payment_id = ? AND credit_id = ? LIMIT 1');
+            $stmt->execute([$paymentId, $creditId]);
+            if ($stmt->fetchColumn() !== false) {
+                continue;
+            }
+            $pdo->prepare('INSERT INTO payment_allocations (payment_id, credit_id, amount) VALUES (?, ?, ?)')
+                ->execute([$paymentId, $creditId, money($row['amount'] ?? 0)]);
+            bump('affectations ajoutées');
         }
     }
 

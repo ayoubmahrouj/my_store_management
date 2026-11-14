@@ -14,6 +14,9 @@ une seule interface (thème sombre premium) et un bouton **« + »** de créatio
 
 Les trois dossiers d'origine restent intacts : `gestion_unifiee` est autonome.
 
+> **Importer les anciennes données ?** Guide détaillé, table par table :
+> **[IMPORT_DONNEES.md](IMPORT_DONNEES.md)** (Stock + Crédits + Chèques + POS).
+
 ---
 
 ## 1. Prérequis
