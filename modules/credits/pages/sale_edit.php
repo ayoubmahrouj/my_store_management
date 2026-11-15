@@ -311,7 +311,7 @@ print_header(t('sale_edit') . ' #' . $id, fr_date($selectedDate));
                     <?php foreach ($items as $item): ?>
                         <tr class="sale-line">
                             <td>
-                                <input type="text" name="name[]" value="<?= e(item_label($item)) ?>" required>
+                                <input type="text" name="name[]" value="<?= e(item_name($item)) ?>" required>
                                 <input type="hidden" name="brand[]" value="<?= e(item_brand($item)) ?>">
                                 <input type="hidden" name="product_id[]" value="<?= (int) $item['product_id'] ?>">
                             </td>

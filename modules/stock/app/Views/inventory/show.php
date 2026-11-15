@@ -115,8 +115,11 @@ $canAct = \App\Core\Auth::isRole('admin', 'responsable', 'magasinier');
                         ?>
                         <tr data-inventory-row>
                             <td>
-                                <?php $lineMeta = array_filter([$line->sku(), $line->brand(), $line->unit()], static fn (string $v): bool => $v !== ''); ?>
-                                <strong><?= e($line->designation()) ?></strong>
+                                <?php
+                                $lineBrand = $line->brand();
+                                $lineMeta = array_filter([$line->sku(), $line->unit()], static fn (string $v): bool => $v !== '');
+                                ?>
+                                <strong><?= e($line->designation()) ?><?= $lineBrand !== '' ? '&nbsp;&nbsp;&nbsp;' . e($lineBrand) : '' ?></strong>
                                 <small class="d-block muted"><?= e(implode(' · ', $lineMeta)) ?></small>
                             </td>
                             <td class="text-end"><?= e(qty($line->theoretical())) ?></td>

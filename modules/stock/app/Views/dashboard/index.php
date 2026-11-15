@@ -160,8 +160,8 @@ $pendingTotal = array_sum($pending);
                         <i class="bi bi-<?= $product->isOutOfStock() ? 'x-octagon' : 'exclamation-triangle' ?>"></i>
                     </span>
                     <div class="alert-info">
-                        <strong><?= e($product->designation()) ?></strong>
-                        <small><?= e($product->sku()) ?><?= $product->brand() !== '' ? ' · ' . e($product->brand()) : '' ?> · <?= t('seuil') ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
+                        <strong><?= e($product->designation()) ?><?= $product->brand() !== '' ? '&nbsp;&nbsp;&nbsp;' . e($product->brand()) : '' ?></strong>
+                        <small><?= e($product->sku()) ?> · <?= t('seuil') ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
                     </div>
                     <span class="qty-badge <?= $product->isOutOfStock() ? 'danger' : 'warning' ?>"><?= e(qty($product->quantity())) ?></span>
                 </div>

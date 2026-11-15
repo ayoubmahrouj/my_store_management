@@ -293,8 +293,8 @@ if ($maxLocation <= 0) {
             <?php foreach ($lowStock as $product): ?>
                 <div class="alert-row">
                     <div>
-                        <strong><?= e($product->designation()) ?></strong>
-                        <small><?= e($product->sku()) ?><?= $product->brand() !== '' ? ' · ' . e($product->brand()) : '' ?> · <?= e(t('seuil')) ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
+                        <strong><?= e($product->designation()) ?><?= $product->brand() !== '' ? '&nbsp;&nbsp;&nbsp;' . e($product->brand()) : '' ?></strong>
+                        <small><?= e($product->sku()) ?> · <?= e(t('seuil')) ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
                     </div>
                     <span class="pill <?= $product->isOutOfStock() ? 'pill-danger' : 'pill-warning' ?>">
                         <?= e(qty($product->quantity())) ?> <?= e(t('en stock')) ?>

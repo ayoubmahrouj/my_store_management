@@ -445,25 +445,36 @@ function item_name(array $item): string
 }
 
 /**
- * Libellé complet d'une ligne de vente : « Désignation — Marque ».
+ * Libellé complet d'une ligne de vente : « Désignation   Marque ».
  */
 function item_label(array $item): string
 {
     $name = item_name($item);
     $brand = item_brand($item);
 
-    return $brand !== '' ? $name . ' — ' . $brand : $name;
+    return $brand !== '' ? $name . str_repeat("\u{00A0}", 3) . $brand : $name;
 }
 
 /**
- * Libellé complet d'un produit : « Désignation — Marque ».
+ * Libellé d'un produit : « Désignation   Marque ».
+ *
+ * Les espaces sont insécables pour rester visibles partout (dans un <option>
+ * le navigateur réduit les espaces ordinaires à un seul caractère).
  */
 function product_label(array $product): string
 {
     $name = trim((string) ($product['name'] ?? ''));
     $brand = trim((string) ($product['brand'] ?? ''));
 
-    return $brand !== '' ? $name . ' — ' . $brand : $name;
+    return $brand !== '' ? $name . str_repeat("\u{00A0}", 3) . $brand : $name;
+}
+
+/**
+ * Même libellé, pour les listes déroulantes (alias explicite).
+ */
+function product_option_label(array $product): string
+{
+    return product_label($product);
 }
 
 /**
