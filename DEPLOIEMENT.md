@@ -202,6 +202,13 @@ Envoyez l'archive via **Gestionnaire de fichiers** puis **Extraire**, ou par
 FTP/SFTP. Le chemin de base (`app.base`) est détecté automatiquement : aucune
 configuration supplémentaire n'est nécessaire pour un sous-dossier.
 
+**Si l'application est dans un sous-dossier** (`public_html/gestion_unifiee/`)
+et que vous voulez qu'une visite de `https://exemple.com/` y mène, copiez
+`deploy/index_root.php` à la racine sous le nom `index.php` : il redirige vers
+`gestion_unifiee/login.php` (ou affiche une page d'aide si le dossier de
+l'application est absent). Le même fichier est fourni à la racine du paquet
+`gestion_our_stock/`.
+
 ### 3.4 Créer `shared/config.local.php`
 
 Copiez `deploy/config.local.example.php` en `shared/config.local.php` et

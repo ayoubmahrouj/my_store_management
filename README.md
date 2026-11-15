@@ -204,7 +204,7 @@ gestion_unifiee/
 │   ├── credits/            Module Crédits & ventes
 │   └── cheques/            Module Chèques & effets
 ├── storage/                Logs, exports, uploads, cache (inscriptible)
-├── deploy/                 Modèle de configuration serveur
+├── deploy/                 Modèle de configuration serveur + index racine
 ├── router.php              Routeur du serveur PHP intégré (dev uniquement)
 └── .htaccess               Sécurité + réécriture Apache
 ```
