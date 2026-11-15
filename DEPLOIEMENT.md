@@ -42,6 +42,16 @@ L'installeur :
 - crée le compte `admin` / `Admin@2026` (modifiable via `ADMIN_LOGIN` /
   `ADMIN_PASSWORD`).
 
+**Sans accès à la ligne de commande** (hébergement mutualisé), importez
+directement le script SQL, qui fait exactement la même chose :
+
+- phpMyAdmin : onglet **Importer** → `database/create_database.sql` → **Exécuter** ;
+- ou en terminal : `mysql -u root -p < database/create_database.sql`.
+
+Le script est idempotent : le réimporter ne crée aucun doublon et n'écrase pas
+les valeurs déjà personnalisées. Il est généré depuis `schema.sql` — après une
+modification du schéma, relancez `php database/build_create_sql.php`.
+
 ### 1.4 Importer les anciennes données
 
 Les trois anciennes bases doivent être présentes dans le même serveur MySQL

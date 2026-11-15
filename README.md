@@ -49,6 +49,13 @@ php database/doctor.php                   # diagnostic
 > Contrairement à `migrate_legacy.php --force` qui **vide puis réimporte**,
 > cette commande n'ajoute que les enregistrements absents.
 
+**Sans PHP en ligne de commande** (hébergement mutualisé) : importez
+`database/create_database.sql` dans phpMyAdmin (onglet **Importer**). Ce script
+unique crée la base, toutes les tables, les vues et les données de base
+(rôles, compte `admin` / `Admin@2026`, paramètres, dépôt `DEP01`). Il est
+généré depuis `schema.sql` : après une modification du schéma, relancez
+`php database/build_create_sql.php`.
+
 5. Ouvrir <http://localhost/gestion_unifiee/login.php>.
 
 Compte créé par l'installeur :
@@ -213,6 +220,10 @@ gestion_unifiee/
 - Vues de compatibilité (`credits_products`, `carnet`, `document_paiement`,
   `alerte_config`, `alerte_log`, `audit_log`) pour que le code historique
   continue de fonctionner sans réécriture lourde.
+- Deux fichiers SQL seulement :
+  - `database/schema.sql` — structure (source de vérité, lue par `install.php`) ;
+  - `database/create_database.sql` — base + structure + données de base,
+    importable tel quel (généré par `database/build_create_sql.php`).
 
 La migration ne modifie **jamais** les anciennes bases : elle ne fait que lire
 `suivi_stock`, `gestion_credits_php` (ou `gestion_credits`) et `gestion_cheques`.
@@ -229,6 +240,7 @@ php database/migrate_split_tiers.php --force # sépare clients / bénéficiaires
 php database/backfill_stock_movements.php # reconstruit le grand livre des mouvements
 php database/upgrade.php                  # ajoute les nouveautés sans perte
 php database/doctor.php                   # contrôle tables, vues, admin, logs
+php database/build_create_sql.php         # régénère create_database.sql (import phpMyAdmin)
 ```
 
 Tous refusent de s'exécuter depuis un navigateur.

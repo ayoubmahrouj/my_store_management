@@ -146,7 +146,7 @@ gestion_unifiee/
 │   │   └── includes/ · lib/ · api/
 ├── api/quick_create.php      # création rapide (« + ») transversale
 ├── api/global_search.php     # palette de recherche globale (JSON, Ctrl K)
-├── database/                 # install · schema.sql · migrations · merge · upgrade · doctor
+├── database/                 # install · schema.sql · create_database.sql · migrations · merge · upgrade · doctor
 ├── assets/                   # CSS/JS communs : shell.css (jetons + structure),
 │                             # premium.css (finitions modules), command.js (palette)
 ├── storage/                  # uploads · exports · backups · logs · cache (non servi)
