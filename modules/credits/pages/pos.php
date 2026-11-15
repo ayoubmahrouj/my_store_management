@@ -141,7 +141,7 @@ $selectedClient = (int) (post('client_id') ?: $passenger['id']);
 $productData = [];
 
 foreach ($products as $product) {
-    $productData[] = ['label' => product_label($product), 'id' => (int) $product['id'], 'price' => (float) $product['price']];
+    $productData[] = ['label' => product_option_label($product), 'id' => (int) $product['id'], 'price' => (float) $product['price']];
 }
 
 layout_start(t('pos'), 'pos');

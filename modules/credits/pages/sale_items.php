@@ -291,7 +291,7 @@ print_header(t('manage_items') . ' #' . $saleId, $sale['client_name']);
                             <option value="<?= (int) $product['id'] ?>"
                                     data-price="<?= e((string) $product['price']) ?>"
                                     <?= $formProduct === (int) $product['id'] ? 'selected' : '' ?>>
-                                <?= e(product_label($product)) ?>
+                                <?= e(product_option_label($product)) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

@@ -200,7 +200,7 @@ layout_start(t('sale_new'), 'sales');
                             <option value="">— <?= e(t('product')) ?> —</option>
                             <?php foreach ($products as $product): ?>
                                 <option value="<?= (int) $product['id'] ?>" data-price="<?= e((string) $product['price']) ?>">
-                                    <?= e(product_label($product)) ?>
+                                    <?= e(product_option_label($product)) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -261,7 +261,7 @@ layout_start(t('sale_new'), 'sales');
                                                 data-price="<?= e((string) $product['price']) ?>"
                                                 data-brand="<?= e((string) $product['brand']) ?>"
                                                 <?= $oldId === (int) $product['id'] ? 'selected' : '' ?>>
-                                            <?= e(product_label($product)) ?>
+                                            <?= e(product_option_label($product)) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -311,7 +311,7 @@ layout_start(t('sale_new'), 'sales');
                         <option value="<?= (int) $product['id'] ?>"
                                 data-price="<?= e((string) $product['price']) ?>"
                                 data-brand="<?= e((string) $product['brand']) ?>">
-                            <?= e(product_label($product)) ?>
+                            <?= e(product_option_label($product)) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
