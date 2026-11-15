@@ -161,7 +161,7 @@ $pendingTotal = array_sum($pending);
                     </span>
                     <div class="alert-info">
                         <strong><?= e($product->designation()) ?></strong>
-                        <small><?= e($product->sku()) ?> · <?= t('seuil') ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
+                        <small><?= e($product->sku()) ?><?= $product->brand() !== '' ? ' · ' . e($product->brand()) : '' ?> · <?= t('seuil') ?> <?= e(qty($product->minStock())) ?> <?= e($product->unit()) ?></small>
                     </div>
                     <span class="qty-badge <?= $product->isOutOfStock() ? 'danger' : 'warning' ?>"><?= e(qty($product->quantity())) ?></span>
                 </div>

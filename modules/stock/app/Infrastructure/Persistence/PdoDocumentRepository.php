@@ -172,11 +172,12 @@ final class PdoDocumentRepository
     public function lines(int $id): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT l.id, l.product_id, p.sku, p.designation, u.code AS unit,
-                    l.qty, l.unit_cost, l.unit_price
+            'SELECT l.id, l.product_id, p.sku, p.designation, COALESCE(b.name, \'\') AS brand,
+                    u.code AS unit, l.qty, l.unit_cost, l.unit_price
              FROM stock_document_lines l
              INNER JOIN products p ON p.id = l.product_id
              INNER JOIN units u ON u.id = p.unit_id
+             LEFT JOIN brands b ON b.id = p.brand_id
              WHERE l.document_id = :id
              ORDER BY l.id ASC'
         );
@@ -187,6 +188,7 @@ final class PdoDocumentRepository
             (int) $row['product_id'],
             (string) $row['sku'],
             (string) $row['designation'],
+            (string) $row['brand'],
             (string) $row['unit'],
             (float) $row['qty'],
             (float) $row['unit_cost'],

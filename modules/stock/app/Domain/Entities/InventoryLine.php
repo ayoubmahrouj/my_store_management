@@ -10,6 +10,7 @@ final class InventoryLine
         private int $productId,
         private string $sku,
         private string $designation,
+        private string $brand,
         private string $unit,
         private float $theoretical,
         private ?float $counted,
@@ -22,6 +23,7 @@ final class InventoryLine
     public function productId(): int { return $this->productId; }
     public function sku(): string { return $this->sku; }
     public function designation(): string { return $this->designation; }
+    public function brand(): string { return $this->brand; }
     public function unit(): string { return $this->unit; }
     public function theoretical(): float { return $this->theoretical; }
     public function counted(): ?float { return $this->counted; }
@@ -43,6 +45,7 @@ final class InventoryLine
             'product_id'  => $this->productId,
             'sku'         => $this->sku,
             'designation' => $this->designation,
+            'brand'       => $this->brand,
             'unit'        => $this->unit,
             'theoretical' => $this->theoretical,
             'counted'     => $this->counted,

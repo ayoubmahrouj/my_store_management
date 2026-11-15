@@ -10,6 +10,7 @@ final class StockDocumentLine
         private int $productId,
         private string $sku,
         private string $designation,
+        private string $brand,
         private string $unit,
         private float $qty,
         private float $unitCost,
@@ -21,6 +22,7 @@ final class StockDocumentLine
     public function productId(): int { return $this->productId; }
     public function sku(): string { return $this->sku; }
     public function designation(): string { return $this->designation; }
+    public function brand(): string { return $this->brand; }
     public function unit(): string { return $this->unit; }
     public function qty(): float { return $this->qty; }
     public function unitCost(): float { return $this->unitCost; }
@@ -44,6 +46,7 @@ final class StockDocumentLine
             'product_id'  => $this->productId,
             'sku'         => $this->sku,
             'designation' => $this->designation,
+            'brand'       => $this->brand,
             'unit'        => $this->unit,
             'qty'         => $this->qty,
             'unit_cost'   => $this->unitCost,

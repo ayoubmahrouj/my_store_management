@@ -65,11 +65,12 @@ final class PdoInventoryRepository
     public function lines(int $id): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT il.id, il.product_id, p.sku, p.designation, u.code AS unit,
-                    il.qty_theoretical, il.qty_counted, il.gap, il.unit_cost
+            'SELECT il.id, il.product_id, p.sku, p.designation, COALESCE(b.name, \'\') AS brand,
+                    u.code AS unit, il.qty_theoretical, il.qty_counted, il.gap, il.unit_cost
              FROM inventory_lines il
              INNER JOIN products p ON p.id = il.product_id
              INNER JOIN units u ON u.id = p.unit_id
+             LEFT JOIN brands b ON b.id = p.brand_id
              WHERE il.session_id = :id
              ORDER BY p.designation ASC'
         );
@@ -80,6 +81,7 @@ final class PdoInventoryRepository
             (int) $row['product_id'],
             (string) $row['sku'],
             (string) $row['designation'],
+            (string) $row['brand'],
             (string) $row['unit'],
             (float) $row['qty_theoretical'],
             $row['qty_counted'] !== null ? (float) $row['qty_counted'] : null,
