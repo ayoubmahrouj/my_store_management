@@ -418,6 +418,27 @@ php database/doctor.php
 
 > N'utilisez jamais `--fresh` en production : cela supprime la base.
 
+### 5.1 Deux copies locales : penser au `git pull`
+
+Sur ce poste il y a deux copies du code, et **seule celle servie par Apache
+est visible dans le navigateur** :
+
+| Copie | Chemin | Rôle |
+|---|---|---|
+| Développement | `D:\dev\gestion stock\gestion_our_stock\gestion_unifiee` | on modifie ici |
+| Apache (WAMP) | `C:\wamp64\www\gestion_our_stock\gestion_unifiee` | on regarde ici |
+
+Après chaque commit, la copie Apache reste en arrière jusqu'à ce qu'on la
+mette à jour. Toujours lancer :
+
+```bash
+git -C "C:/wamp64/www/gestion_our_stock/gestion_unifiee" pull --ff-only origin main
+```
+
+Sinon le navigateur affiche l'ancienne version alors que le code est déjà
+corrigé et poussé. Les fichiers ignorés (`shared/config.local.php`,
+`storage/backups/`) sont conservés par le `pull`.
+
 ---
 
 ## 6. Dépannage
