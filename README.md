@@ -241,6 +241,7 @@ php database/backfill_stock_movements.php # reconstruit le grand livre des mouve
 php database/upgrade.php                  # ajoute les nouveautés sans perte
 php database/doctor.php                   # contrôle tables, vues, admin, logs
 php database/build_create_sql.php         # régénère create_database.sql (import phpMyAdmin)
+php database/reset_data.php --force       # vide les données métier (garde comptes + paramètres)
 ```
 
 Tous refusent de s'exécuter depuis un navigateur.
