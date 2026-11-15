@@ -117,13 +117,10 @@ body.gos-body::after {
     color: transparent;
 }
 
-.gos-content > * {
-    animation: gos-rise .55s cubic-bezier(.2, .7, .2, 1) both;
-}
-
-.gos-content > *:nth-child(2) { animation-delay: .04s; }
-.gos-content > *:nth-child(3) { animation-delay: .08s; }
-.gos-content > *:nth-child(4) { animation-delay: .12s; }
+/* Pas d'animation d'entrée sur le contenu : sur une grosse base, un fondu
+   « both » laisse la page grise le temps du rendu. Le contenu est affiché
+   immédiatement — perception de rapidité. */
+.gos-content > * { animation: none; }
 
 .gos-card,
 .gos-kpi,
@@ -1052,4 +1049,642 @@ body.gos-auth-body::before {
     .bons-page .table img {
         transition: none !important;
     }
+}
+/* =========================================================================
+   V3 — Système de design unifié
+   Une seule grammaire visuelle pour la coquille et les 3 modules :
+   surfaces, densité, cartes KPI, tableaux, filtres, badges, boutons.
+   ========================================================================= */
+
+/* ------------------------------- Surfaces ------------------------------- */
+
+body.gos-body .card,
+body.gos-body .panel,
+body.gos-body .stat,
+body.gos-body .kpi,
+body.gos-body .kpi-card {
+    background: var(--gos-panel);
+    border: 1px solid var(--gos-line);
+    border-radius: var(--gos-radius);
+    box-shadow: var(--gos-shadow);
+}
+
+body.gos-body .card-head,
+body.gos-body .panel-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--gos-line);
+}
+
+body.gos-body .card-head h2,
+body.gos-body .panel-head h2 {
+    font-size: 14.5px;
+    letter-spacing: -.2px;
+}
+
+/* Titres de page des modules : même échelle que la coquille. */
+body.gos-body .page-head { gap: 4px; }
+body.gos-body .page-head h1,
+body.gos-body .page-head h2 {
+    font-size: 24px;
+    font-weight: 780;
+    letter-spacing: -.7px;
+    line-height: 1.15;
+}
+body.gos-body .page-head p { font-size: 12.5px; color: var(--gos-muted); }
+body.gos-body .eyebrow,
+body.gos-body .page-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--gos-accent);
+}
+
+/* --------------------------- Cartes indicateurs -------------------------- */
+
+body.gos-body .kpi-card,
+body.gos-body .stat,
+body.gos-body .kpi {
+    position: relative;
+    overflow: hidden;
+    padding: 15px 16px 14px;
+    transition: border-color .18s ease;
+}
+
+body.gos-body .kpi-card::before,
+body.gos-body .stat::before,
+body.gos-body .kpi::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--gos-accent), transparent 85%);
+    opacity: .8;
+}
+
+body.gos-body .kpi-label,
+body.gos-body .stat-label,
+body.gos-body .kpi-card .kpi-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .9px;
+    text-transform: uppercase;
+    color: var(--gos-muted-2);
+}
+
+body.gos-body .kpi-card strong,
+body.gos-body .stat-value,
+body.gos-body .kpi-value {
+    font-size: 23px;
+    font-weight: 780;
+    letter-spacing: -.7px;
+    line-height: 1.15;
+    color: var(--gos-text);
+    font-variant-numeric: tabular-nums;
+}
+
+body.gos-body .stat-foot,
+body.gos-body .kpi-card small,
+body.gos-body .kpi small {
+    font-size: 11px;
+    color: var(--gos-muted-2);
+}
+
+/* Cartes du tableau de bord Stock */
+body.gos-body.stock-module .kpi-card .kpi-icon,
+body.gos-body.stock-module .kpi-card .icon {
+    background: var(--gos-accent-soft) !important;
+    color: var(--gos-accent) !important;
+}
+
+/* -------------------------------- Tableaux ------------------------------- */
+
+body.gos-body .table-wrap {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    border-radius: 12px;
+}
+
+body.gos-body .table,
+body.gos-body .table-premium,
+body.gos-body.module-cheques table.data {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12.5px;
+    color: var(--gos-text-soft);
+    margin: 0;
+}
+
+body.gos-body .table thead th,
+body.gos-body .table-premium thead th,
+body.gos-body.module-cheques table.data thead th {
+    position: relative;
+    padding: 9px 12px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--gos-muted-2);
+    background: var(--gos-panel-2);
+    border-bottom: 1px solid var(--gos-line);
+    white-space: nowrap;
+}
+
+body.gos-body .table tbody td,
+body.gos-body .table-premium tbody td,
+body.gos-body.module-cheques table.data tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--gos-line-soft);
+    vertical-align: middle;
+    color: var(--gos-text-soft);
+}
+
+body.gos-body .table tbody tr:last-child td,
+body.gos-body .table-premium tbody tr:last-child td,
+body.gos-body.module-cheques table.data tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+body.gos-body .table tbody tr,
+body.gos-body .table-premium tbody tr,
+body.gos-body.module-cheques table.data tbody tr {
+    transition: background .12s ease;
+}
+
+body.gos-body .table tbody tr:hover,
+body.gos-body .table-premium tbody tr:hover,
+body.gos-body.module-cheques table.data tbody tr:hover {
+    background: var(--gos-panel-2);
+}
+
+body.gos-body .table td.num,
+body.gos-body .table th.num,
+body.gos-body .table-premium .num,
+body.gos-body.module-cheques table.data .num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+body.gos-body .table td strong,
+body.gos-body .table-premium td strong {
+    color: var(--gos-text);
+    font-weight: 650;
+}
+
+body.gos-body .table .small,
+body.gos-body .table-premium .small {
+    font-size: 11px;
+    color: var(--gos-muted-2);
+}
+
+body.gos-body .table td.actions,
+body.gos-body .table-premium td.actions {
+    white-space: nowrap;
+    text-align: end;
+}
+
+body.gos-body .table td.actions .btn,
+body.gos-body .table-premium td.actions .btn {
+    padding: 5px 9px;
+    font-size: 11px;
+    border-radius: 8px;
+}
+
+body.gos-body .table .muted,
+body.gos-body .table-premium .muted {
+    color: var(--gos-muted-2);
+}
+
+/* Pastille d'identifiant de ligne (Stock) */
+body.gos-body .table-premium .cell-id,
+body.gos-body .table .cell-id {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: var(--gos-panel-3);
+    color: var(--gos-muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Indice de scroll horizontal : dégradé discret sur le bord droit */
+body.gos-body .table-wrap { position: relative; }
+body.gos-body .table-wrap::after {
+    content: "";
+    position: sticky;
+    right: 0;
+    float: right;
+    width: 18px;
+    height: 1px;
+    pointer-events: none;
+}
+
+/* --------------------------- Barres de filtres --------------------------- */
+
+body.gos-body .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    margin: 0 0 14px;
+    background: transparent;
+    border: 0;
+}
+
+body.gos-body .filter-panel,
+body.gos-body .toolbar .filters,
+body.gos-body.module-cheques .filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    align-items: end;
+    gap: 8px 10px;
+    width: 100%;
+    padding: 12px 14px !important;
+    margin: 0;
+    border: 1px solid var(--gos-line) !important;
+    border-radius: 12px !important;
+    background: var(--gos-panel) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+body.gos-body .filter-field,
+body.gos-body .filters .field {
+    min-width: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+body.gos-body .filter-field.wide,
+body.gos-body .filters .field.wide {
+    grid-column: span 2;
+}
+
+body.gos-body .filter-field > label,
+body.gos-body .filter-field > span,
+body.gos-body .filters .field > span {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    color: var(--gos-muted-2);
+}
+
+body.gos-body .filter-field .form-control,
+body.gos-body .filter-field .form-select,
+body.gos-body .filters .field input,
+body.gos-body .filters .field select {
+    height: 34px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    border-radius: 9px;
+    background-color: var(--gos-panel-2);
+    border: 1px solid var(--gos-line);
+    color: var(--gos-text);
+}
+
+body.gos-body .filter-field .form-control:focus,
+body.gos-body .filter-field .form-select:focus,
+body.gos-body .filters .field input:focus,
+body.gos-body .filters .field select:focus {
+    border-color: var(--gos-accent);
+    box-shadow: var(--gos-ring);
+    outline: none;
+}
+
+body.gos-body .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: 2px;
+}
+
+body.gos-body .filter-panel .btn,
+body.gos-body .toolbar .filters .btn {
+    height: 34px;
+    padding: 0 13px;
+    font-size: 12px;
+}
+
+/* Barre de filtres : les champs s'ajustent, les boutons restent sur la même ligne. */
+body.gos-body .toolbar .filters,
+body.gos-body.module-cheques .toolbar .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 10px;
+}
+
+body.gos-body .toolbar .filters .field,
+body.gos-body.module-cheques .toolbar .filters .field {
+    flex: 1 1 150px;
+    max-width: 250px;
+}
+
+body.gos-body .toolbar .filters .field:first-of-type,
+body.gos-body.module-cheques .toolbar .filters .field:first-of-type {
+    flex: 1 1 210px;
+    max-width: 360px;
+}
+
+body.gos-body .toolbar .filters .btn,
+body.gos-body.module-cheques .toolbar .filters .btn {
+    flex: 0 0 auto;
+}
+
+/* Le bouton de réinitialisation ferme toujours la barre, aligné à droite. */
+body.gos-body .toolbar .filters > a.btn:last-child,
+body.gos-body.module-cheques .toolbar .filters > a.btn:last-child {
+    margin-inline-start: auto;
+}
+
+/* L'ancien panneau de filtres Stock occupait 200 px de haut. */
+body.gos-body.stock-module .filter-panel {
+    background: var(--gos-panel) !important;
+    background-image: none !important;
+    border: 1px solid var(--gos-line) !important;
+}
+
+body.gos-body.stock-module .filter-panel .filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+    gap: 8px 10px;
+    align-items: end;
+}
+
+body.gos-body .table th.sortable::after { opacity: 0; }
+body.gos-body .table th.sortable:hover::after { opacity: .5; }
+body.gos-body .table th.sortable.sort-asc::after,
+body.gos-body .table th.sortable.sort-desc::after { opacity: .95; }
+
+/* -------------------------------- Boutons -------------------------------- */
+
+body.gos-body .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 13px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 650;
+    line-height: 1;
+    border: 1px solid var(--gos-line);
+    background: var(--gos-panel-2);
+    color: var(--gos-text-soft);
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+body.gos-body .btn:hover { background: var(--gos-panel-3); color: var(--gos-text); border-color: var(--gos-line-2); }
+body.gos-body .btn-primary {
+    background: linear-gradient(135deg, var(--gos-accent), var(--gos-accent-2));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 10px 24px -12px rgba(107, 140, 255, .8);
+}
+body.gos-body .btn-primary:hover { filter: brightness(1.06); color: #fff; }
+body.gos-body .btn-ghost { background: transparent; border-color: var(--gos-line); color: var(--gos-text-soft); }
+body.gos-body .btn-sm { height: 28px; padding: 0 9px; font-size: 11px; border-radius: 7px; }
+body.gos-body .btn svg { width: 14px; height: 14px; }
+body.gos-body .btn-icon { width: 28px; height: 28px; padding: 0; display: inline-grid; place-items: center; border-radius: 7px; }
+body.gos-body .btn-icon svg { width: 14px; height: 14px; }
+body.gos-body .btn-icon.btn-danger {
+    background: var(--gos-danger-soft);
+    border-color: rgba(251, 107, 124, .24);
+    color: var(--gos-danger);
+}
+body.gos-body .btn-icon.btn-danger:hover { background: rgba(251, 107, 124, .2); color: #ffd0d6; }
+
+/* --------------------------------- Badges -------------------------------- */
+
+body.gos-body .badge,
+body.gos-body .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 21px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .1px;
+    border: 1px solid transparent;
+    background: var(--gos-panel-3);
+    color: var(--gos-text-soft);
+    white-space: nowrap;
+}
+
+body.gos-body .badge-green,
+body.gos-body .pill-success { background: var(--gos-green-soft); color: var(--gos-green); border-color: rgba(45, 212, 167, .22); }
+body.gos-body .badge-red,
+body.gos-body .pill-danger { background: var(--gos-danger-soft); color: var(--gos-danger); border-color: rgba(251, 107, 124, .22); }
+body.gos-body .badge-orange,
+body.gos-body .badge-gold,
+body.gos-body .pill-warning { background: var(--gos-gold-soft); color: var(--gos-gold); border-color: rgba(242, 183, 63, .22); }
+body.gos-body .badge-muted,
+body.gos-body .pill-muted { background: var(--gos-panel-3); color: var(--gos-muted); }
+body.gos-body .pill-info { background: var(--gos-accent-soft); color: var(--gos-accent); border-color: rgba(107, 140, 255, .22); }
+
+/* ------------------------------ États vides ------------------------------ */
+
+body.gos-body .empty,
+body.gos-body .empty-state {
+    padding: 34px 16px;
+    text-align: center;
+    color: var(--gos-muted);
+    font-size: 12.5px;
+    background: transparent;
+}
+body.gos-body .empty::before,
+body.gos-body .empty-state::before {
+    content: "";
+    display: block;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--gos-line-2);
+    background: var(--gos-panel-2);
+}
+
+/* ---------------------------- Ajustements fins --------------------------- */
+
+body.gos-body .small { font-size: 11px; }
+body.gos-body .muted { color: var(--gos-muted-2); }
+
+/* Module Crédits : montants et colonnes secondaires */
+body.gos-body.module-credits .card { overflow: hidden; }
+/* Liste large (ventes, versements) : colonnes maîtrisées, plus de débordement. */
+body.gos-body.module-credits .table-list { table-layout: fixed; width: 100%; }
+body.gos-body.module-credits .table-list th:nth-child(1) { width: 58px; }
+body.gos-body.module-credits .table-list th:nth-child(2) { width: 88px; }
+body.gos-body.module-credits .table-list th:nth-child(3) { width: 150px; }
+body.gos-body.module-credits .table-list th:nth-child(5),
+body.gos-body.module-credits .table-list th:nth-child(6),
+body.gos-body.module-credits .table-list th:nth-child(7) { width: 104px; }
+body.gos-body.module-credits .table-list th:nth-child(8) { width: 96px; }
+body.gos-body.module-credits .table-list th:nth-child(9) { width: 82px; }
+body.gos-body.module-credits .table-list th:last-child { width: 158px; }
+body.gos-body.module-credits .table-list td.actions { white-space: nowrap; }
+body.gos-body.module-credits .table-list td.actions .btn.btn-icon {
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0 0 0 3px;
+}
+body.gos-body.module-credits .table-list td { overflow: hidden; }
+body.gos-body.module-credits .table-list td .small.nowrap {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Trois articles suffisent à identifier la vente : les lignes restent denses. */
+body.gos-body.module-credits .table-list td .small.nowrap:nth-of-type(n + 4) { display: none; }
+
+/* Versements : remarque sur une ligne, actions compactes. */
+body.gos-body.module-credits .table-payments th:nth-child(1) { width: 58px; }
+body.gos-body.module-credits .table-payments th:nth-child(2) { width: 88px; }
+body.gos-body.module-credits .table-payments th:nth-child(3) { width: 168px; }
+body.gos-body.module-credits .table-payments th:nth-child(4) { width: 118px; }
+body.gos-body.module-credits .table-payments th:nth-child(5) { width: 92px; }
+body.gos-body.module-credits .table-payments th:nth-child(6) { width: auto; }
+body.gos-body.module-credits .table-payments th:nth-child(7) { width: 116px; }
+body.gos-body.module-credits .table-payments th:last-child { width: 128px; }
+body.gos-body.module-credits .table-payments td:nth-child(6) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.gos-body.module-credits .table-list td.actions .btn { margin: 2px 2px 2px 0; }
+body.gos-body.module-credits .table-list td:nth-child(3) > a:first-child {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.gos-body.module-credits .table-compact { table-layout: fixed; width: 100%; }
+body.gos-body.module-credits .table-compact .col-date { width: 86px; }
+body.gos-body.module-credits .table-compact .col-amount { width: 108px; }
+body.gos-body.module-credits .table-compact .col-status { width: 96px; }
+body.gos-body.module-credits .table-compact td { vertical-align: top; }
+body.gos-body.module-credits .table-compact td > a:first-child {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.gos-body.module-credits .table-compact .small {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+/* Au-delà de 3 articles, on résume : la ligne reste compacte et scannable. */
+body.gos-body.module-credits .table-compact td > .small:nth-of-type(n + 4) { display: none; }
+body.gos-body.module-credits .card-head { padding: 12px 16px; }
+body.gos-body.module-credits .grid { gap: 12px; margin-bottom: 14px; }
+body.gos-body.module-credits .grid:last-child { margin-bottom: 0; }
+body.gos-body.module-credits .stat-value { font-size: 22px; }
+
+/* Module Chèques : bandeau KPI compact */
+body.gos-body.module-cheques .kpi { padding: 13px 14px; }
+body.gos-body.module-cheques .kpi-value { font-size: 21px; }
+body.gos-body.module-cheques .table-wrap { border: 1px solid var(--gos-line); border-radius: 12px; }
+body.gos-body.module-cheques .page-title { font-size: 24px; font-weight: 780; letter-spacing: -.7px; }
+body.gos-body.module-cheques td.text-right.mono,
+body.gos-body.module-cheques td.text-right { white-space: nowrap; }
+body.gos-body.module-cheques .bar-fill {
+    border-radius: 7px 7px 2px 2px;
+    background: linear-gradient(180deg, var(--gos-accent), rgba(107, 140, 255, .3));
+}
+body.gos-body.module-cheques .bar-fill.gold {
+    background: linear-gradient(180deg, var(--gos-gold), rgba(242, 183, 63, .3));
+}
+/* Mois sans échéance : la barre reste un repère discret, sans étiquette « 0 ». */
+body.gos-body.module-cheques .bar-col[title$="0,00 DH"] .bar-value { visibility: hidden; }
+body.gos-body.module-cheques .bar-col[title$="0,00 DH"] .bar-fill { opacity: .22; }
+
+/* Module Stock : cartes et listes */
+body.gos-body.stock-module .pending-card {
+    border-radius: 11px;
+    border-color: var(--gos-line);
+    background: var(--gos-panel-2);
+}
+body.gos-body.stock-module .pending-card:hover { background: var(--gos-panel-3); border-color: var(--gos-line-2); }
+
+/* Bandeau de synthèse (Produits / Valeur / Sous le seuil) */
+body.gos-body.stock-module .mini-stats > div,
+body.gos-body.stock-module .error-card,
+body.gos-body.stock-module .ref-add[open],
+body.gos-body.stock-module .quick-modal .document-totals {
+    background: var(--gos-panel);
+    border-color: var(--gos-line);
+    color: var(--gos-text);
+}
+body.gos-body.stock-module .mini-stats > div { border-radius: 12px; padding: 12px 15px; }
+body.gos-body.stock-module .mini-stats span { color: var(--gos-muted-2); }
+body.gos-body.stock-module .mini-stats strong { color: var(--gos-text); font-size: 17px; }
+body.gos-body.stock-module .mini-stats .text-warning,
+body.gos-body.stock-module .mini-stats strong.text-warning { color: var(--gos-gold) !important; }
+
+body.gos-body.stock-module .check-item.done {
+    background: var(--gos-green-soft);
+    border-color: rgba(45, 212, 167, .3);
+}
+
+/* Champs de recherche à largeur fixe dans les filtres */
+body.gos-body.stock-module .input-icon.compact .form-control { width: 100%; }
+body.gos-body .filter-field .input-icon,
+body.gos-body .filter-field .gos-quick-wrap { width: 100%; }
+
+/* ------------------------------- Responsive ------------------------------ */
+
+@media (max-width: 1180px) {
+    body.gos-body .filter-panel,
+    body.gos-body .toolbar .filters,
+    body.gos-body.stock-module .filter-panel .filter-form {
+        grid-template-columns: repeat(auto-fit, minmax(152px, 1fr));
+    }
+    body.gos-body .filter-field.wide,
+    body.gos-body .filters .field.wide { grid-column: span 1; }
+}
+
+@media (max-width: 900px) {
+    body.gos-body .page-head h1,
+    body.gos-body .page-head h2 { font-size: 21px; }
+    body.gos-body .table tbody td,
+    body.gos-body .table-premium tbody td,
+    body.gos-body.module-cheques table.data tbody td { padding: 8px 10px; }
+    body.gos-body .table thead th,
+    body.gos-body .table-premium thead th { padding: 8px 10px; }
+    body.gos-body .grid-3,
+    body.gos-body .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    body.gos-body .grid-2,
+    body.gos-body .grid-3,
+    body.gos-body .grid-4 { grid-template-columns: minmax(0, 1fr); }
+    body.gos-body .table,
+    body.gos-body .table-premium { font-size: 11.5px; }
+    body.gos-body .toolbar { gap: 6px; }
+    body.gos-body .filter-panel,
+    body.gos-body .toolbar .filters { padding: 10px !important; }
 }

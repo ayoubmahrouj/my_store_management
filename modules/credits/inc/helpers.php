@@ -195,6 +195,23 @@ function fr_datetime(?string $date): string
     return $ts ? date('d/m/Y H:i', $ts) : $date;
 }
 
+/** « novembre 2026 » — libellé de mois lisible dans les KPI. */
+function fr_month_year(?string $date = null): string
+{
+    $ts = $date ? strtotime($date) : time();
+
+    if (! $ts) {
+        return '—';
+    }
+
+    $months = [
+        1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+    ];
+
+    return $months[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
 /* -------------------------------------------------------------------------
 | Métier : crédits
 |-------------------------------------------------------------------------*/
@@ -501,15 +518,105 @@ function credit_role_code(string $sharedCode): string
 
 function credit_status_label(string $status): string
 {
-    return $status === 'paid' ? t('status_paid') : t('status_open');
+    // Statuts historiques : « active » (ancien) = « open », « settled » = « paid ».
+    return match ($status) {
+        'paid', 'settled', 'closed' => t('status_paid'),
+        default => t('status_open'),
+    };
 }
 
 function sale_status_label(string $status): string
 {
     return match ($status) {
         'paid' => t('status_paid'),
-        'credit' => t('status_credit'),
+        'credit', 'unpaid' => t('status_credit'),
         'partial' => t('status_partial'),
         default => $status,
     };
+}
+
+/**
+ * Pagination serveur des listes (ventes, crédits, produits, versements).
+ *
+ * Les listes du module affichaient auparavant toutes les lignes : avec une
+ * base de plusieurs milliers de ventes, chaque page devenait lourde. On ne
+ * charge plus qu'une tranche de $perPage lignes et on conserve les filtres
+ * courants dans les liens.
+ */
+function paginate(int $total, int $perPage = 50, string $param = 'page'): array
+{
+    $perPage = max(1, $perPage);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = (int) get($param, 1);
+    $page = min(max(1, $page), $pages);
+
+    return [
+        'page' => $page,
+        'pages' => $pages,
+        'per_page' => $perPage,
+        'offset' => ($page - 1) * $perPage,
+        'total' => $total,
+    ];
+}
+
+/** Liens de pagination : conserve tous les filtres de l'URL. */
+function pager(array $p, string $param = 'page'): void
+{
+    $total = (int) $p['total'];
+    $pages = (int) $p['pages'];
+    $page = (int) $p['page'];
+    $perPage = (int) $p['per_page'];
+
+    if ($pages <= 1) {
+        return;
+    }
+
+    $link = static function (int $target) use ($param): string {
+        $query = $_GET;
+        $query[$param] = $target;
+        return '?' . http_build_query($query);
+    };
+
+    $from = ($page - 1) * $perPage + 1;
+    $to = min($total, $page * $perPage);
+
+    $window = [];
+    $start = max(1, $page - 2);
+    $end = min($pages, $page + 2);
+    for ($i = $start; $i <= $end; $i++) {
+        $window[] = $i;
+    }
+
+    echo '<div class="gos-pager">';
+    echo '<span>' . number_format($from, 0, ',', ' ') . '–' . number_format($to, 0, ',', ' ')
+        . ' / ' . number_format($total, 0, ',', ' ') . '</span>';
+    echo '<div class="gos-pager-links">';
+
+    if ($page > 1) {
+        echo '<a href="' . e($link($page - 1)) . '" rel="prev" aria-label="' . e(t('previous')) . '">‹</a>';
+    }
+    if ($start > 1) {
+        echo '<a href="' . e($link(1)) . '">1</a>';
+        if ($start > 2) {
+            echo '<span class="is-gap">…</span>';
+        }
+    }
+    foreach ($window as $i) {
+        if ($i === $page) {
+            echo '<span class="is-current" aria-current="page">' . $i . '</span>';
+        } else {
+            echo '<a href="' . e($link($i)) . '">' . $i . '</a>';
+        }
+    }
+    if ($end < $pages) {
+        if ($end < $pages - 1) {
+            echo '<span class="is-gap">…</span>';
+        }
+        echo '<a href="' . e($link($pages)) . '">' . $pages . '</a>';
+    }
+    if ($page < $pages) {
+        echo '<a href="' . e($link($page + 1)) . '" rel="next" aria-label="' . e(t('next')) . '">›</a>';
+    }
+
+    echo '</div></div>';
 }

@@ -86,24 +86,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $q = trim((string) get('q'));
 $status = (string) get('status', 'active');
 
-$sql = 'SELECT * FROM credits_products WHERE 1 = 1';
+$where = ' WHERE 1 = 1';
 $params = [];
 
 if ($q !== '') {
-    $sql .= ' AND (name LIKE ? OR brand LIKE ? OR description LIKE ?)';
+    $where .= ' AND (name LIKE ? OR brand LIKE ? OR description LIKE ?)';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
 }
 
 if ($status === 'active') {
-    $sql .= ' AND is_active = 1';
+    $where .= ' AND is_active = 1';
 } elseif ($status === 'inactive') {
-    $sql .= ' AND is_active = 0';
+    $where .= ' AND is_active = 0';
 }
 
-$sql .= ' ORDER BY brand, name';
-$products = all($sql, $params);
+$total = (int) scalar('SELECT COUNT(*) FROM credits_products' . $where, $params);
+$p = paginate($total, 50);
+
+$products = all(
+    'SELECT * FROM credits_products' . $where
+    . ' ORDER BY brand, name LIMIT ' . $p['per_page'] . ' OFFSET ' . $p['offset'],
+    $params
+);
 
 // Liste des marques : table brands + marques déjà présentes sur des produits.
 $brands = array_column(
@@ -155,7 +161,7 @@ print_header(t('products'));
 
 <div class="card">
     <div class="table-wrap">
-        <table class="table">
+        <table class="table" data-nopage>
             <thead>
             <tr>
                 <th><?= e(t('product')) ?></th>
@@ -199,6 +205,7 @@ print_header(t('products'));
             </tbody>
         </table>
     </div>
+    <?php pager($p); ?>
 </div>
 
 <!-- Modale produit -->

@@ -13,36 +13,47 @@ $to = (string) get('to', today());
 $method = (string) get('method');
 $clientId = (int) get('client_id');
 
-$sql = 'SELECT p.*, c.name AS client_name, c.phone AS client_phone, u.name AS user_name
-        FROM payments p
+$fromSql = 'FROM payments p
         JOIN clients c ON c.id = p.client_id
         LEFT JOIN users u ON u.id = p.user_id
         WHERE p.date BETWEEN ? AND ?';
+$where = '';
 $params = [$from, $to];
 
 if ($q !== '') {
-    $sql .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
+    $where .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
 }
 
 if (in_array($method, ['cash', 'card', 'transfer'], true)) {
-    $sql .= ' AND p.method = ?';
+    $where .= ' AND p.method = ?';
     $params[] = $method;
 }
 
 if ($clientId > 0) {
-    $sql .= ' AND p.client_id = ?';
+    $where .= ' AND p.client_id = ?';
     $params[] = $clientId;
 }
 
-$sql .= ' ORDER BY p.date DESC, p.id DESC';
-$payments = all($sql, $params);
+$totals = one(
+    'SELECT COUNT(*) AS n, COALESCE(SUM(p.amount), 0) AS amount_sum,
+            COUNT(DISTINCT p.client_id) AS clients_n '
+    . $fromSql . $where,
+    $params
+);
 
-$sumAmount = 0.0;
-foreach ($payments as $payment) {
-    $sumAmount += (float) $payment['amount'];
-}
+$p = paginate((int) ($totals['n'] ?? 0), 50);
+
+$payments = all(
+    'SELECT p.*, c.name AS client_name, c.phone AS client_phone, u.name AS user_name '
+    . $fromSql . $where
+    . ' ORDER BY p.date DESC, p.id DESC'
+    . ' LIMIT ' . $p['per_page'] . ' OFFSET ' . $p['offset'],
+    $params
+);
+
+$sumAmount = (float) ($totals['amount_sum'] ?? 0);
 
 $clients = all('SELECT id, name FROM clients WHERE is_active = 1 AND is_passenger = 0 ORDER BY name');
 
@@ -97,7 +108,7 @@ print_header(t('payments'), fr_date($from) . ' → ' . fr_date($to));
     <div class="card stat">
         <div class="stat-label"><?= e(t('kpi_payments')) ?></div>
         <div class="stat-value" style="color:var(--green)"><?= money($sumAmount) ?></div>
-        <div class="stat-foot"><?= count($payments) ?> <?= e(t('payments')) ?></div>
+        <div class="stat-foot"><?= number_format((int) $p['total'], 0, ',', ' ') ?> <?= e(t('payments')) ?></div>
     </div>
     <div class="card stat">
         <div class="stat-label"><?= e(t('period')) ?></div>
@@ -105,13 +116,13 @@ print_header(t('payments'), fr_date($from) . ' → ' . fr_date($to));
     </div>
     <div class="card stat">
         <div class="stat-label"><?= e(t('clients_count')) ?></div>
-        <div class="stat-value"><?= count(array_unique(array_column($payments, 'client_id'))) ?></div>
+        <div class="stat-value"><?= number_format((int) ($totals['clients_n'] ?? 0), 0, ',', ' ') ?></div>
     </div>
 </div>
 
 <div class="card">
     <div class="table-wrap">
-        <table class="table">
+        <table class="table table-list table-payments" data-nopage>
             <thead>
             <tr>
                 <th>#</th>
@@ -141,15 +152,22 @@ print_header(t('payments'), fr_date($from) . ' → ' . fr_date($to));
                     <td class="muted"><?= e($payment['note'] ?: '—') ?></td>
                     <td class="muted"><?= e($payment['user_name'] ?: '—') ?></td>
                     <td class="actions">
-                        <a class="btn btn-ghost btn-sm" href="<?= url('ticket', ['type' => 'payment', 'id' => $payment['id']]) ?>" target="_blank"><?= e(t('receipt')) ?></a>
+                        <a class="btn btn-ghost btn-sm btn-icon" href="<?= url('ticket', ['type' => 'payment', 'id' => $payment['id']]) ?>" target="_blank"
+                           title="<?= e(t('receipt')) ?>" aria-label="<?= e(t('receipt')) ?>">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                        </a>
                         <?php if (is_admin()): ?>
-                            <a class="btn btn-ghost btn-sm" href="<?= url('payment_edit', ['id' => $payment['id']]) ?>"><?= e(t('edit')) ?></a>
+                            <a class="btn btn-ghost btn-sm btn-icon" href="<?= url('payment_edit', ['id' => $payment['id']]) ?>"
+                               title="<?= e(t('edit')) ?>" aria-label="<?= e(t('edit')) ?>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            </a>
                             <form method="post" action="<?= url('payment_delete') ?>" style="display:inline">
                                 <input type="hidden" name="_token" value="<?= csrf() ?>">
                                 <input type="hidden" name="id" value="<?= (int) $payment['id'] ?>">
-                                <button class="btn btn-danger btn-sm" type="submit"
+                                <button class="btn btn-danger btn-sm btn-icon" type="submit"
+                                        title="<?= e(t('delete')) ?>" aria-label="<?= e(t('delete')) ?>"
                                         data-action="confirm" data-message="<?= e(t('confirm_delete_payment')) ?>">
-                                    <?= e(t('delete')) ?>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
                                 </button>
                             </form>
                         <?php endif; ?>
@@ -159,6 +177,7 @@ print_header(t('payments'), fr_date($from) . ' → ' . fr_date($to));
             </tbody>
         </table>
     </div>
+    <?php pager($p); ?>
 </div>
 
 <?php layout_end(); ?>

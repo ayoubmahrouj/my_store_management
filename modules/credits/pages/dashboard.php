@@ -59,7 +59,7 @@ layout_start(t('dashboard'), 'dashboard');
     <div class="card stat">
         <div class="stat-label"><?= e(t('sales_month')) ?></div>
         <div class="stat-value"><?= money($salesMonth) ?></div>
-        <div class="stat-foot"><?= e(date('m/Y')) ?></div>
+        <div class="stat-foot"><?= e(fr_month_year()) ?></div>
     </div>
     <div class="card stat">
         <div class="stat-label"><?= e(t('outstanding')) ?></div>
@@ -83,13 +83,13 @@ layout_start(t('dashboard'), 'dashboard');
             <div class="empty"><?= e(t('no_sales')) ?></div>
         <?php else: ?>
             <div class="table-wrap">
-                <table class="table">
+                <table class="table table-compact">
                     <thead>
                     <tr>
-                        <th><?= e(t('date')) ?></th>
+                        <th class="col-date"><?= e(t('date')) ?></th>
                         <th><?= e(t('client')) ?></th>
-                        <th class="num"><?= e(t('total')) ?></th>
-                        <th><?= e(t('status')) ?></th>
+                        <th class="num col-amount"><?= e(t('total')) ?></th>
+                        <th class="col-status"><?= e(t('status')) ?></th>
                     </tr>
                     </thead>
                     <tbody>

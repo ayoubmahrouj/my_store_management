@@ -10,60 +10,67 @@ $from = (string) get('from');
 $to = (string) get('to');
 $clientId = (int) get('client_id');
 
-$sql = 'SELECT cr.*, c.name AS client_name, c.phone AS client_phone, s.date AS sale_date
-        FROM credits cr
+$fromSql = 'FROM credits cr
         JOIN clients c ON c.id = cr.client_id
         JOIN sales s ON s.id = cr.sale_id
         WHERE 1 = 1';
+$where = '';
 $params = [];
 
 if ($q !== '') {
-    $sql .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
+    $where .= ' AND (c.name LIKE ? OR c.phone LIKE ?)';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
 }
 
 if ($status === 'open' || $status === 'paid') {
-    $sql .= ' AND cr.status = ?';
+    $where .= ' AND cr.status = ?';
     $params[] = $status;
 }
 
 if ($overdue === '1') {
-    $sql .= " AND cr.status = 'open' AND cr.due_date IS NOT NULL AND cr.due_date < ?";
+    $where .= " AND cr.status = 'open' AND cr.due_date IS NOT NULL AND cr.due_date < ?";
     $params[] = today();
 }
 
 if ($from !== '') {
-    $sql .= ' AND date(cr.created_at) >= ?';
+    $where .= ' AND date(cr.created_at) >= ?';
     $params[] = $from;
 }
 
 if ($to !== '') {
-    $sql .= ' AND date(cr.created_at) <= ?';
+    $where .= ' AND date(cr.created_at) <= ?';
     $params[] = $to;
 }
 
 if ($clientId > 0) {
-    $sql .= ' AND cr.client_id = ?';
+    $where .= ' AND cr.client_id = ?';
     $params[] = $clientId;
 }
 
-$sql .= ' ORDER BY (cr.status = \'open\') DESC, cr.due_date IS NULL, cr.due_date, cr.id DESC';
-$credits = all($sql, $params);
+/* Les totaux portent sur la totalité du filtre, pas seulement la page. */
+$totals = one(
+    "SELECT COUNT(*) AS n,
+            COALESCE(SUM(CASE WHEN cr.status = 'open' THEN cr.remaining ELSE 0 END), 0) AS open_sum,
+            COALESCE(SUM(CASE WHEN cr.status = 'open' AND cr.due_date IS NOT NULL AND cr.due_date < ? THEN cr.remaining ELSE 0 END), 0) AS overdue_sum,
+            COALESCE(SUM(CASE WHEN cr.status <> 'open' THEN cr.amount ELSE 0 END), 0) AS paid_sum
+     " . $fromSql . $where,
+    array_merge([today()], $params)
+);
 
-$sumOpen = 0.0;
-$sumOverdue = 0.0;
-$sumPaid = 0.0;
-foreach ($credits as $credit) {
-    if ($credit['status'] === 'open') {
-        $sumOpen += (float) $credit['remaining'];
-        if ($credit['due_date'] && $credit['due_date'] < today()) {
-            $sumOverdue += (float) $credit['remaining'];
-        }
-    } else {
-        $sumPaid += (float) $credit['amount'];
-    }
-}
+$p = paginate((int) ($totals['n'] ?? 0), 50);
+
+$credits = all(
+    'SELECT cr.*, c.name AS client_name, c.phone AS client_phone, s.date AS sale_date '
+    . $fromSql . $where
+    . " ORDER BY (cr.status = 'open') DESC, cr.due_date IS NULL, cr.due_date, cr.id DESC"
+    . ' LIMIT ' . $p['per_page'] . ' OFFSET ' . $p['offset'],
+    $params
+);
+
+$sumOpen = (float) ($totals['open_sum'] ?? 0);
+$sumOverdue = (float) ($totals['overdue_sum'] ?? 0);
+$sumPaid = (float) ($totals['paid_sum'] ?? 0);
 
 $clients = all('SELECT id, name FROM clients WHERE is_active = 1 AND is_passenger = 0 ORDER BY name');
 
@@ -136,7 +143,7 @@ print_header(t('credits'), $status === 'open' ? t('status_open') : '');
 
 <div class="card">
     <div class="table-wrap">
-        <table class="table">
+        <table class="table" data-nopage>
             <thead>
             <tr>
                 <th>#</th>
@@ -186,6 +193,7 @@ print_header(t('credits'), $status === 'open' ? t('status_open') : '');
             </tbody>
         </table>
     </div>
+    <?php pager($p); ?>
 </div>
 
 <?php layout_end(); ?>

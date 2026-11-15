@@ -145,11 +145,32 @@ gestion_unifiee/
 │   │   ├── documents/ · beneficiaires/ · carnets/ · personnes/ …
 │   │   └── includes/ · lib/ · api/
 ├── api/quick_create.php      # création rapide (« + ») transversale
+├── api/global_search.php     # palette de recherche globale (JSON, Ctrl K)
 ├── database/                 # install · schema.sql · migrations · merge · upgrade · doctor
-├── assets/                   # CSS/JS communs (dont premium.css)
+├── assets/                   # CSS/JS communs : shell.css (jetons + structure),
+│                             # premium.css (finitions modules), command.js (palette)
 ├── storage/                  # uploads · exports · backups · logs · cache (non servi)
 └── deploy/                   # exemples de configuration serveur
 ```
+
+### Interface : une seule couche de présentation
+
+| Élément | Fichier | Rôle |
+|---|---|---|
+| Jetons & structure | `assets/css/shell.css` | variables `--gos-*`, sidebar, topbar, palette, pager, bottom-nav mobile, thèmes |
+| Finitions modules | `assets/css/premium.css` | KPI, tableaux, filtres, badges, boutons, états vides, responsive |
+| Palette | `assets/js/command.js` + `api/global_search.php` | recherche globale groupée, clavier, cache |
+| Pagination | `modules/credits/inc/helpers.php` | `paginate()` / `pager()` — 50 lignes, agrégats SQL |
+
+Règles à respecter en ajoutant un écran :
+
+1. Ne pas créer de troisième feuille de style : compléter `premium.css`.
+2. Les classes de module (`stock-module`, `module-credits`, `module-cheques`)
+   sont posées sur `<body>` → sélecteur `body.gos-body.module-credits`.
+3. Toute liste longue passe par `paginate()` + `pager()` et porte `data-nopage`
+   (sinon le paginateur JavaScript historique s'ajoute au pager serveur).
+4. Pas d'animation d'entrée sur le contenu, pas de `backdrop-filter` : la base
+   réelle (3247 produits, 937 ventes, 5500 mouvements) doit rester fluide.
 
 ---
 

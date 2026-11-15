@@ -150,6 +150,36 @@ lue et écrite par le socle et le module Chèques. La table historique
 plus utilisée par l'application (`database/upgrade.php` reprend une fois ses
 valeurs vers `settings` si besoin).
 
+## 4 quater. Interface — design system et recherche globale
+
+L'interface est commune aux trois modules : même barre supérieure, même barre
+latérale, mêmes composants. Deux feuilles de style seulement, chargées dans cet
+ordre :
+
+| Fichier | Rôle |
+|---|---|
+| `assets/css/shell.css` | Jetons de design (`--gos-*`), structure (sidebar, topbar, palette, pager), thèmes sombre/clair |
+| `assets/css/premium.css` | Finitions et surcharges des modules (KPI, tableaux, filtres, badges, responsive) |
+
+- **Thème sombre par défaut**, thème clair disponible via le bouton lune/soleil
+  (mémorisé dans `localStorage`). Le sélecteur est posé sur `<html>` **et**
+  `<body>` : les surcharges de modules ciblent `[data-theme="dark"]`.
+- **Navigation** : sidebar 252 px sur ordinateur, barre inférieure à 4 modules
+  sous 720 px. Le sélecteur de module (2 × 2) reste visible en haut de la sidebar.
+- **Recherche globale (Ctrl / Cmd + K)** : palette de commandes qui interroge
+  `api/global_search.php` (JSON, protégé par la session). Résultats groupés
+  (produits, clients, bénéficiaires, fournisseurs, chèques, ventes), 6 par groupe,
+  préfixe d'abord. Côté navigateur : délai de frappe 140 ms, `AbortController`,
+  cache de 40 requêtes, navigation clavier ↑ ↓ Entrée Échap.
+- **Listes volumineuses** : pagination **côté serveur** (50 lignes par page) avec
+  totaux calculés en SQL sur l'ensemble du filtre — jamais sur la page affichée.
+  Helpers `paginate()` / `pager()` dans `modules/credits/inc/helpers.php`. Les
+  tableaux concernés portent `data-nopage` pour désactiver l'ancien paginateur
+  JavaScript du module.
+- **Performance perçue** : aucune animation d'entrée sur le contenu, pas de
+  `backdrop-filter` sur les barres, colonnes à largeur fixe (`table-list`) pour
+  éviter les débordements, chiffres tabulaires.
+
 ## 5. Structure
 
 ```
@@ -157,7 +187,9 @@ gestion_unifiee/
 ├── index.php               Tableau de bord global
 ├── login.php / logout.php  Authentification unique
 ├── api/quick_create.php    API du bouton « + »
-├── assets/                 Thème partagé (shell.css, shell.js, quick-create.js)
+├── api/global_search.php   API de la palette de recherche (Ctrl K)
+├── assets/                 Thème partagé (shell.css, premium.css, shell.js,
+│                           quick-create.js, command.js)
 ├── shared/                 Socle commun (config, db, auth, layout, i18n)
 ├── database/               schema.sql, install, migration, upgrade, diagnostic
 ├── modules/

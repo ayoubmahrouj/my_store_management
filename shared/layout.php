@@ -121,8 +121,8 @@ function sh_module_switcher(string $current): void
     $modules = [
         ['key' => 'home', 'label' => sh_t('home'), 'icon' => 'grid', 'url' => sh_url('/index.php')],
         ['key' => 'stock', 'label' => sh_t('stock'), 'icon' => 'box', 'url' => sh_module_url('stock', '/dashboard')],
-        ['key' => 'credits', 'label' => sh_t('credits'), 'icon' => 'cart', 'url' => sh_module_url('credits', '/index.php?p=dashboard')],
-        ['key' => 'cheques', 'label' => sh_t('cheques'), 'icon' => 'wallet', 'url' => sh_module_url('cheques', '/index.php')],
+        ['key' => 'credits', 'label' => sh_t('credits_short'), 'icon' => 'cart', 'url' => sh_module_url('credits', '/index.php?p=dashboard')],
+        ['key' => 'cheques', 'label' => sh_t('cheques_short'), 'icon' => 'wallet', 'url' => sh_module_url('cheques', '/index.php')],
     ];
 
     echo '<div class="gos-switcher" role="navigation" aria-label="Modules">';
@@ -223,6 +223,11 @@ function sh_layout_start(array $opts = []): void
         . '</button>';
     echo '<div class="gos-page-head"><h1>' . sh_e($title) . '</h1><p>' . sh_e($opts['subtitle'] !== '' ? $opts['subtitle'] : sh_date_long()) . '</p></div>';
     echo '<div class="gos-topbar-actions">';
+    echo '<button class="gos-search-trigger" type="button" id="gosSearchBtn" aria-label="' . sh_e(sh_t('search_global')) . '" aria-keyshortcuts="Control+K">'
+        . sh_nav_icon('search')
+        . '<span>' . sh_e(sh_t('search_global')) . '</span>'
+        . '<span class="gos-kbd">Ctrl K</span>'
+        . '</button>';
     if ($module !== 'home') {
         echo '<span class="gos-module-pill">' . sh_nav_icon($module === 'stock' ? 'box' : ($module === 'credits' ? 'cart' : 'wallet')) . sh_e(sh_module_label($module)) . '</span>';
     }
@@ -244,10 +249,37 @@ function sh_layout_start(array $opts = []): void
 
 function sh_layout_end(): void
 {
+    $opts = $GLOBALS['GOS_LAYOUT_OPTS'] ?? [];
+    $module = (string) ($opts['module'] ?? 'home');
+
     echo '</main>';
     echo '<footer class="gos-footer"><span>' . sh_e(GOS_APP_NAME) . ' · v' . sh_e(GOS_VERSION) . '</span><span>PHP ' . sh_e(PHP_VERSION) . ' · MySQL</span></footer>';
     echo '</div>'; // gos-main
     echo '</div>'; // gos-shell
+
+    /* Navigation mobile */
+    sh_bottom_nav($module);
+
+    /* Palette de recherche globale */
+    echo '<div class="gos-cmd" id="gosCmd" hidden role="dialog" aria-modal="true"'
+        . ' aria-label="' . sh_e(sh_t('search_global')) . '"'
+        . ' data-hint="' . sh_e(sh_t('search_hint')) . '"'
+        . ' data-empty="' . sh_e(sh_t('search_empty')) . '"'
+        . ' data-loading="' . sh_e(sh_t('loading')) . '">'
+        . '<div class="gos-cmd-backdrop" data-cmd-close></div>'
+        . '<div class="gos-cmd-panel" role="combobox" aria-expanded="true" aria-haspopup="listbox">'
+        . '<div class="gos-cmd-head">'
+        . sh_nav_icon('search')
+        . '<input class="gos-cmd-input" id="gosCmdInput" type="text" autocomplete="off" spellcheck="false" placeholder="' . sh_e(sh_t('search_placeholder')) . '" aria-controls="gosCmdBody">'
+        . '<button class="gos-cmd-close" type="button" data-cmd-close>ESC</button>'
+        . '</div>'
+        . '<div class="gos-cmd-body" id="gosCmdBody" role="listbox"></div>'
+        . '<div class="gos-cmd-foot">'
+        . '<span><span class="gos-kbd">↑</span><span class="gos-kbd">↓</span> ' . sh_e(sh_t('search_nav')) . '</span>'
+        . '<span><span class="gos-kbd">↵</span> ' . sh_e(sh_t('search_open')) . '</span>'
+        . '<span><span class="gos-kbd">esc</span> ' . sh_e(sh_t('search_close')) . '</span>'
+        . '</div>'
+        . '</div></div>';
 
     /* Modale de création rapide (+) */
     echo '<div class="gos-modal" id="gosQuickModal" hidden aria-hidden="true" role="dialog" aria-modal="true">'
@@ -264,11 +296,35 @@ function sh_layout_end(): void
 
     echo '<script src="' . sh_e(sh_asset('js/shell.js')) . '"></script>';
     echo '<script src="' . sh_e(sh_asset('js/quick-create.js')) . '"></script>';
-    $opts = $GLOBALS['GOS_LAYOUT_OPTS'] ?? [];
+    echo '<script src="' . sh_e(sh_asset('js/command.js')) . '" defer></script>';
     foreach (($opts['extra_js'] ?? []) as $js) {
         echo '<script src="' . sh_e($js) . '"></script>';
     }
     echo '</body></html>';
+}
+
+/** Barre de navigation fixe sur mobile (4 modules). */
+function sh_bottom_nav(string $current): void
+{
+    $items = [
+        ['key' => 'home', 'label' => sh_t('home'), 'icon' => 'grid', 'url' => sh_url('/index.php')],
+        ['key' => 'stock', 'label' => sh_t('stock'), 'icon' => 'box', 'url' => sh_module_url('stock', '/dashboard')],
+        ['key' => 'credits', 'label' => sh_t('credits_short'), 'icon' => 'cart', 'url' => sh_module_url('credits', '/index.php?p=dashboard')],
+        ['key' => 'cheques', 'label' => sh_t('cheques_short'), 'icon' => 'wallet', 'url' => sh_module_url('cheques', '/index.php')],
+    ];
+
+    echo '<nav class="gos-bottomnav" aria-label="Modules">';
+    foreach ($items as $item) {
+        if ($item['key'] !== 'home' && !core_can_access($item['key'])) {
+            continue;
+        }
+        $isActive = $current === $item['key'];
+        echo '<a class="' . ($isActive ? 'is-active' : '') . '" href="' . sh_e($item['url']) . '"' . ($isActive ? ' aria-current="page"' : '') . '>'
+            . sh_nav_icon($item['icon'])
+            . '<span>' . sh_e($item['label']) . '</span>'
+            . '</a>';
+    }
+    echo '</nav>';
 }
 
 function sh_auth_layout_start(string $title): void

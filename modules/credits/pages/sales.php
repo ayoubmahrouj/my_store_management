@@ -14,35 +14,47 @@ $status = (string) get('status');
 $method = (string) get('method');
 $clientId = (int) get('client_id');
 
-$sql = 'SELECT s.*, c.name AS client_name, c.phone AS client_phone
-        FROM sales s JOIN clients c ON c.id = s.client_id
-        WHERE s.date BETWEEN ? AND ?';
+$fromSql = 'FROM sales s JOIN clients c ON c.id = s.client_id WHERE s.date BETWEEN ? AND ?';
+$where = '';
 $params = [$from, $to];
 
 if ($q !== '') {
-    $sql .= ' AND (c.name LIKE ? OR c.phone LIKE ? OR s.id = ?)';
+    $where .= ' AND (c.name LIKE ? OR c.phone LIKE ? OR s.id = ?)';
     $params[] = '%' . $q . '%';
     $params[] = '%' . $q . '%';
     $params[] = (int) $q;
 }
 
 if (in_array($status, ['paid', 'credit', 'partial'], true)) {
-    $sql .= ' AND s.status = ?';
+    $where .= ' AND s.status = ?';
     $params[] = $status;
 }
 
 if (in_array($method, ['cash', 'card', 'transfer', 'credit'], true)) {
-    $sql .= ' AND s.payment_method = ?';
+    $where .= ' AND s.payment_method = ?';
     $params[] = $method;
 }
 
 if ($clientId > 0) {
-    $sql .= ' AND s.client_id = ?';
+    $where .= ' AND s.client_id = ?';
     $params[] = $clientId;
 }
 
-$sql .= ' ORDER BY s.date DESC, s.id DESC';
-$sales = all($sql, $params);
+$totals = one(
+    'SELECT COUNT(*) AS n, COALESCE(SUM(s.total), 0) AS total_sum, COALESCE(SUM(s.paid), 0) AS paid_sum '
+    . $fromSql . $where,
+    $params
+);
+
+$p = paginate((int) ($totals['n'] ?? 0), 50);
+
+$sales = all(
+    'SELECT s.*, c.name AS client_name, c.phone AS client_phone '
+    . $fromSql . $where
+    . ' ORDER BY s.date DESC, s.id DESC'
+    . ' LIMIT ' . $p['per_page'] . ' OFFSET ' . $p['offset'],
+    $params
+);
 
 // Produits (marque + désignation) de chaque vente affichée.
 $itemsBySale = [];
@@ -61,12 +73,8 @@ if ($sales) {
     }
 }
 
-$sumTotal = 0.0;
-$sumPaid = 0.0;
-foreach ($sales as $sale) {
-    $sumTotal += (float) $sale['total'];
-    $sumPaid += (float) $sale['paid'];
-}
+$sumTotal = (float) ($totals['total_sum'] ?? 0);
+$sumPaid = (float) ($totals['paid_sum'] ?? 0);
 
 $clients = all('SELECT id, name FROM clients WHERE is_active = 1 AND is_passenger = 0 ORDER BY name');
 
@@ -131,7 +139,7 @@ print_header(t('sales'), fr_date($from) . ' → ' . fr_date($to));
     <div class="card stat">
         <div class="stat-label"><?= e(t('kpi_sales')) ?></div>
         <div class="stat-value"><?= money($sumTotal) ?></div>
-        <div class="stat-foot"><?= count($sales) ?> <?= e(t('sales')) ?></div>
+        <div class="stat-foot"><?= number_format((int) $p['total'], 0, ',', ' ') ?> <?= e(t('sales')) ?></div>
     </div>
     <div class="card stat">
         <div class="stat-label"><?= e(t('kpi_paid')) ?></div>
@@ -145,7 +153,7 @@ print_header(t('sales'), fr_date($from) . ' → ' . fr_date($to));
 
 <div class="card">
     <div class="table-wrap">
-        <table class="table">
+        <table class="table table-list" data-nopage>
             <thead>
             <tr>
                 <th>#</th>
@@ -190,16 +198,26 @@ print_header(t('sales'), fr_date($from) . ' → ' . fr_date($to));
                         </span>
                     </td>
                     <td class="actions">
-                        <a class="btn btn-ghost btn-sm" href="<?= url('sale', ['id' => $sale['id']]) ?>"><?= e(t('sale_detail')) ?></a>
-                        <a class="btn btn-ghost btn-sm" href="<?= url('ticket', ['type' => 'sale', 'id' => $sale['id']]) ?>" target="_blank"><?= e(t('ticket')) ?></a>
+                        <a class="btn btn-ghost btn-sm btn-icon" href="<?= url('sale', ['id' => $sale['id']]) ?>"
+                           title="<?= e(t('sale_detail')) ?>" aria-label="<?= e(t('sale_detail')) ?>">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </a>
+                        <a class="btn btn-ghost btn-sm btn-icon" href="<?= url('ticket', ['type' => 'sale', 'id' => $sale['id']]) ?>" target="_blank"
+                           title="<?= e(t('ticket')) ?>" aria-label="<?= e(t('ticket')) ?>">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+                        </a>
                         <?php if (is_admin()): ?>
-                            <a class="btn btn-ghost btn-sm" href="<?= url('sale_edit', ['id' => $sale['id']]) ?>"><?= e(t('edit')) ?></a>
+                            <a class="btn btn-ghost btn-sm btn-icon" href="<?= url('sale_edit', ['id' => $sale['id']]) ?>"
+                               title="<?= e(t('edit')) ?>" aria-label="<?= e(t('edit')) ?>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            </a>
                             <form method="post" action="<?= url('sale_delete') ?>" style="display:inline">
                                 <input type="hidden" name="_token" value="<?= csrf() ?>">
                                 <input type="hidden" name="id" value="<?= (int) $sale['id'] ?>">
-                                <button class="btn btn-danger btn-sm" type="submit"
+                                <button class="btn btn-danger btn-sm btn-icon" type="submit"
+                                        title="<?= e(t('delete')) ?>" aria-label="<?= e(t('delete')) ?>"
                                         data-action="confirm" data-message="<?= e(t('confirm_delete_sale')) ?>">
-                                    <?= e(t('delete')) ?>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
                                 </button>
                             </form>
                         <?php endif; ?>
@@ -209,6 +227,7 @@ print_header(t('sales'), fr_date($from) . ' → ' . fr_date($to));
             </tbody>
         </table>
     </div>
+    <?php pager($p); ?>
 </div>
 
 <?php layout_end(); ?>
