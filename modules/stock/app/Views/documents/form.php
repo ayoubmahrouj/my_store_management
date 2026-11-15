@@ -41,7 +41,7 @@ $renderOptions = static function (int $selected = 0) use ($products): void {
                 data-unit="<?= e((string) $product['unit']) ?>"
                 data-brand="<?= e($brand) ?>"
                 <?= $selected === (int) $product['id'] ? 'selected' : '' ?>>
-            <?= e((string) $product['sku']) ?> — <?= e((string) $product['designation']) ?><?= $brand !== '' ? ' · ' . e($brand) : '' ?>
+            <?= e((string) $product['designation']) ?><?= $brand !== '' ? '&nbsp;&nbsp;&nbsp;' . e($brand) : '' ?>
         </option>
         <?php
     }
