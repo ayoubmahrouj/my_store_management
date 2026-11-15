@@ -210,12 +210,15 @@ final class PdoProductRepository
         return $row === false ? null : $row;
     }
 
-    /** @return array<int, array{id: int, sku: string, designation: string, unit: string, purchase_cost: float, sale_price: float}> */
+    /** @return array<int, array{id: int, sku: string, designation: string, brand: string, unit: string, purchase_cost: float, sale_price: float}> */
     public function allActiveSimple(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT p.id, p.sku, p.designation, u.code AS unit, p.purchase_cost, p.sale_price
-             FROM products p INNER JOIN units u ON u.id = p.unit_id
+            'SELECT p.id, p.sku, p.designation, COALESCE(b.name, \'\') AS brand,
+                    u.code AS unit, p.purchase_cost, p.sale_price
+             FROM products p
+             INNER JOIN units u ON u.id = p.unit_id
+             LEFT JOIN brands b ON b.id = p.brand_id
              WHERE p.active = 1 ORDER BY p.designation ASC'
         );
 
@@ -223,6 +226,7 @@ final class PdoProductRepository
             'id'            => (int) $row['id'],
             'sku'           => (string) $row['sku'],
             'designation'   => (string) $row['designation'],
+            'brand'         => (string) $row['brand'],
             'unit'          => (string) $row['unit'],
             'purchase_cost' => (float) $row['purchase_cost'],
             'sale_price'    => (float) $row['sale_price'],

@@ -126,7 +126,8 @@
             var costLabel = row.querySelector('.line-cost-label');
 
             var unit = option ? (option.getAttribute('data-unit') || '') : '';
-            if (unitLabel) unitLabel.textContent = unit;
+            var brand = option ? (option.getAttribute('data-brand') || '') : '';
+            if (unitLabel) unitLabel.textContent = [unit, brand].filter(Boolean).join(' · ');
 
             if (!option || !option.value) {
                 if (costInput && type !== 'entree') costInput.value = '';

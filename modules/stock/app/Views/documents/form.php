@@ -33,13 +33,15 @@ if ($oldItems === []) {
 
 $renderOptions = static function (int $selected = 0) use ($products): void {
     foreach ($products as $product) {
+        $brand = trim((string) ($product['brand'] ?? ''));
         ?>
         <option value="<?= (int) $product['id'] ?>"
                 data-cost="<?= e((string) $product['purchase_cost']) ?>"
                 data-price="<?= e((string) $product['sale_price']) ?>"
                 data-unit="<?= e((string) $product['unit']) ?>"
+                data-brand="<?= e($brand) ?>"
                 <?= $selected === (int) $product['id'] ? 'selected' : '' ?>>
-            <?= e((string) $product['sku']) ?> — <?= e((string) $product['designation']) ?>
+            <?= e((string) $product['sku']) ?> — <?= e((string) $product['designation']) ?><?= $brand !== '' ? ' · ' . e($brand) : '' ?>
         </option>
         <?php
     }
