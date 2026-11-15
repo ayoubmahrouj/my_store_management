@@ -123,6 +123,7 @@ body.gos-body table td[style*="text-align:right"] {
     border-right: 1px solid var(--gos-line);
     z-index: 60;
     overflow-y: auto;
+    overflow-x: hidden;
     overscroll-behavior: contain;
     scrollbar-width: thin;
 }
