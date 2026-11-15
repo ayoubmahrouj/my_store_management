@@ -1300,14 +1300,27 @@ body.gos-body .toolbar {
 }
 
 body.gos-body .filter-panel,
-body.gos-body .toolbar .filters,
-body.gos-body.module-cheques .filters {
+body.gos-body .toolbar .filters {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
     align-items: end;
     gap: 8px 10px;
     width: 100%;
     padding: 12px 14px !important;
+    margin: 0;
+    border: 1px solid var(--gos-line) !important;
+    border-radius: 12px !important;
+    background: var(--gos-panel) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* Chèques : le module gère lui-même .filters-main / .filters-advanced.
+   On ne change que l'habillage, jamais la disposition interne. */
+body.gos-body.module-cheques .filters {
+    display: block;
+    width: 100%;
+    padding: 14px 16px !important;
     margin: 0;
     border: 1px solid var(--gos-line) !important;
     border-radius: 12px !important;
@@ -1361,6 +1374,12 @@ body.gos-body .filters .field select:focus {
     outline: none;
 }
 
+/* Le champ de recherche garde la place de la loupe. */
+body.gos-body .filters .search-box .input,
+body.gos-body .filters .search-box input {
+    padding-inline-start: 38px;
+}
+
 body.gos-body .filter-actions {
     display: flex;
     align-items: center;
@@ -1378,34 +1397,29 @@ body.gos-body .toolbar .filters .btn {
 }
 
 /* Barre de filtres : les champs s'ajustent, les boutons restent sur la même ligne. */
-body.gos-body .toolbar .filters,
-body.gos-body.module-cheques .toolbar .filters {
+body.gos-body .toolbar .filters {
     display: flex;
     flex-wrap: wrap;
     align-items: end;
     gap: 8px 10px;
 }
 
-body.gos-body .toolbar .filters .field,
-body.gos-body.module-cheques .toolbar .filters .field {
+body.gos-body .toolbar .filters .field {
     flex: 1 1 150px;
     max-width: 250px;
 }
 
-body.gos-body .toolbar .filters .field:first-of-type,
-body.gos-body.module-cheques .toolbar .filters .field:first-of-type {
+body.gos-body .toolbar .filters .field:first-of-type {
     flex: 1 1 210px;
     max-width: 360px;
 }
 
-body.gos-body .toolbar .filters .btn,
-body.gos-body.module-cheques .toolbar .filters .btn {
+body.gos-body .toolbar .filters .btn {
     flex: 0 0 auto;
 }
 
 /* Le bouton de réinitialisation ferme toujours la barre, aligné à droite. */
-body.gos-body .toolbar .filters > a.btn:last-child,
-body.gos-body.module-cheques .toolbar .filters > a.btn:last-child {
+body.gos-body .toolbar .filters > a.btn:last-child {
     margin-inline-start: auto;
 }
 
@@ -1512,13 +1526,22 @@ body.gos-body .empty::before,
 body.gos-body .empty-state::before {
     content: "";
     display: block;
-    width: 34px;
-    height: 34px;
+    width: 24px;
+    height: 24px;
     margin: 0 auto 10px;
-    border-radius: 10px;
-    border: 1px dashed var(--gos-line-2);
-    background: var(--gos-panel-2);
+    opacity: .45;
+    background: var(--gos-muted);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-6l-2 3h-4l-2-3H2'/><path d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-6l-2 3h-4l-2-3H2'/><path d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/></svg>") center / contain no-repeat;
 }
+
+/* Tableau vide : pas de barre de défilement inutile. */
+body.gos-body .table-wrap:has(tbody .empty) { overflow-x: hidden; }
+body.gos-body table.table:has(tbody .empty) { min-width: 0; }
+
+/* Les petits tableaux (2 à 4 colonnes) n'ont pas besoin de 700 px : ils tiennent
+   dans une demi-carte sans barre de défilement. */
+body.gos-body.module-credits table.table:not(:has(thead th:nth-child(5))) { min-width: 0; }
 
 /* ---------------------------- Ajustements fins --------------------------- */
 
